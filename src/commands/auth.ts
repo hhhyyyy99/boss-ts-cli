@@ -49,8 +49,8 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
           } else {
             // 回退到二维码登录
             if (!isJsonMode()) {
-              printInfo(chalk.yellow('浏览器 Cookie 提取失败（可能因系统密钥环不可用），回退到二维码登录...'));
-              printInfo(chalk.gray('提示：Linux 用户可尝试 boss login --qrcode 直接扫码，或安装 gnome-keyring'));
+              printInfo(chalk.yellow('浏览器 Cookie 提取失败，回退到二维码登录...'));
+              printInfo(chalk.gray('提示：可直接使用 boss login --qrcode 跳过浏览器检测'));
             }
             cookies = await qrcodeLogin();
             source = 'qrcode';

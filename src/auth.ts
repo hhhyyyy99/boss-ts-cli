@@ -144,33 +144,53 @@ function getChromiumKey(browser: string): Buffer | null {
   }
 
   if (platform === 'linux') {
-    // 方法 1: 尝试 secret-tool (gnome-keyring)
+    // 方法 1: 尝试 secret-tool 查找 Chromium Safe Storage 密钥
+    // Chrome 使用 schema: chrome_libsecret_os_crypt_password_v2, application=Code
     try {
       const result = execSync(
-        'secret-tool lookup application chrome 2>/dev/null',
+        'secret-tool lookup application Code 2>/dev/null',
         { encoding: 'utf-8' }
       ).trim();
-      if (result && result.length > 0 && result.length >= 16) {
-        return Buffer.from(result, 'utf-8');
+      if (result && result.length >= 16) {
+        const key = Buffer.from(result, 'base64');
+        if (key.length >= 16) {
+          return key;
+        }
       }
     } catch {
       // secret-tool 不可用
     }
 
-    // 方法 2: 尝试 kwallet (KDE)
+    // 方法 2: 尝试旧版 keyring 名称
+    try {
+      const result = execSync(
+        'secret-tool lookup application chrome 2>/dev/null',
+        { encoding: 'utf-8' }
+      ).trim();
+      if (result && result.length >= 16) {
+        const key = Buffer.from(result, 'base64');
+        if (key.length >= 16) {
+          return key;
+        }
+      }
+    } catch {
+      // 旧版 keyring 不可用
+    }
+
+    // 方法 3: 尝试 kwallet (KDE)
     try {
       const result = execSync(
         'kwallet-query -r chrome kdewallet 2>/dev/null',
         { encoding: 'utf-8' }
       ).trim();
-      if (result && result.length > 0 && result.length >= 16) {
-        return Buffer.from(result, 'utf-8');
+      if (result && result.length >= 32) {
+        return Buffer.from(result, 'hex');
       }
     } catch {
       // kwallet 不可用
     }
 
-    // 方法 3: 回退到 PBKDF2 (旧版 Chrome, 兼容无密钥环环境)
+    // 方法 4: 回退到 PBKDF2 (兼容无密钥环环境)
     return crypto.pbkdf2Sync('peanuts', 'saltysalt', 1, 16, 'sha1');
   }
 
