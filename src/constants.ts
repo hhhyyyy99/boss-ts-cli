@@ -20,6 +20,13 @@ export const INTERVIEWS_API = `${BASE_URL}/wapi/zpinterview/geek/interview/data.
 export const CHAT_LIST_API = `${BASE_URL}/wapi/zprelation/friend/getGeekFriendList.json`;
 export const GREET_API = `${BASE_URL}/wapi/zpgeek/friend/add.json`;
 
+// ====== Web 页面 URL (用于 Referer) ======
+export const WEB_GEEK_JOB_URL = `${BASE_URL}/web/geek/job`;
+export const WEB_GEEK_RECOMMEND_URL = `${BASE_URL}/web/geek/recommend`;
+export const WEB_GEEK_CHAT_URL = `${BASE_URL}/web/geek/chat`;
+export const WEB_GEEK_HISTORY_URL = `${BASE_URL}/web/geek/history`;
+export const WEB_BOSS_CHAT_URL = `${BASE_URL}/web/chat/index`;
+
 // ====== 招聘方 (Boss) API ======
 export const BOSS_SEARCH_GEEK_URL = `${BASE_URL}/wapi/zpitem/web/boss/search/geek/info`;
 export const BOSS_VIEW_GEEK_URL = `${BASE_URL}/wapi/zpjob/view/geek/info`;

@@ -1,5 +1,5 @@
 import { Cookie, SearchParams } from './types/index.js';
-import { BASE_URL, DEFAULT_HEADERS, RATE_LIMIT_CONFIG, CITY_MAP, SALARY_CODES, EXP_CODES, DEGREE_CODES, INDUSTRY_CODES, SCALE_CODES, STAGE_CODES, JOB_TYPE_CODES } from './constants.js';
+import { BASE_URL, DEFAULT_HEADERS, RATE_LIMIT_CONFIG, CITY_MAP, SALARY_CODES, EXP_CODES, DEGREE_CODES, INDUSTRY_CODES, SCALE_CODES, STAGE_CODES, JOB_TYPE_CODES, SEARCH_API, RECOMMEND_API, JOB_HISTORY_API, JOB_DETAIL_API, GREET_API, CHAT_LIST_API, WEB_GEEK_JOB_URL, WEB_GEEK_RECOMMEND_URL, WEB_GEEK_CHAT_URL, WEB_GEEK_HISTORY_URL, WEB_BOSS_CHAT_URL } from './constants.js';
 import { NotAuthenticatedError, RateLimitedError, ApiError } from './exceptions.js';
 
 // 高斯随机数（Box-Muller 方法）
@@ -173,6 +173,45 @@ export class ApiClient {
     throw new ApiError(`${message} (code=${code})`);
   }
 
+  // 端点专用 Referer（对齐 Python _headers_for_request）
+  private getRefererForUrl(path: string, params?: Record<string, string | number | undefined>): string {
+    // 搜索相关
+    if (path.includes('/search/joblist')) {
+      const query = params?.query ? `?query=${encodeURIComponent(String(params.query))}` : '';
+      return `${WEB_GEEK_JOB_URL}${query}`;
+    }
+    if (path.includes('/interaction/geekGetJob')) {
+      return params?.tag === 5 ? WEB_GEEK_RECOMMEND_URL : WEB_GEEK_CHAT_URL;
+    }
+    if (path.includes('/job/detail') || path.includes('/job/card')) {
+      return WEB_GEEK_JOB_URL;
+    }
+    if (path.includes('/history/joblist')) {
+      return WEB_GEEK_HISTORY_URL;
+    }
+    // 社交相关
+    if (path.includes('/friend/getGeekFriendList') || path.includes('/friend/add')) {
+      return WEB_GEEK_CHAT_URL;
+    }
+    // 招聘方 (Boss) 端点
+    if (path.includes('/boss/search/geek')) {
+      return `${BASE_URL}/web/chat/search`;
+    }
+    if (path.includes('/view/geek') || path.includes('/fastReply/sendReplyMsg')) {
+      return WEB_BOSS_CHAT_URL;
+    }
+    if (path.includes('/friend/filterByLabel') || path.includes('/friend/getBossFriendList') ||
+        path.includes('/chat/boss/') || path.includes('/chat/geek/info') ||
+        path.includes('/friend/label/') || path.includes('/friend/greet') ||
+        path.includes('/job/chatted/') || path.includes('/interview/boss/') ||
+        path.includes('/chat/exchange/') || path.includes('/friend/getExchange') ||
+        path.includes('/friend/bossRemove') || path.includes('/chat/session/') ||
+        path.includes('/job/offline') || path.includes('/job/online')) {
+      return WEB_BOSS_CHAT_URL;
+    }
+    return BASE_URL + '/';
+  }
+
   // 核心请求方法
   async request<T = Record<string, unknown>>(
     method: string,
@@ -199,10 +238,10 @@ export class ApiClient {
       }
     }
 
-    // 构建 Headers
+    // 构建 Headers（端点专用 Referer 对齐 Python _headers_for_request）
     const headers: Record<string, string> = {
       ...DEFAULT_HEADERS,
-      'Referer': BASE_URL + '/',
+      'Referer': this.getRefererForUrl(path, params),
     };
 
     // zp_token: 从 bst cookie 提取
