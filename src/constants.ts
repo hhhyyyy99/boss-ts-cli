@@ -27,8 +27,11 @@ export const HISTORY_API = `${BASE_URL}/wapi/zpgeek/history/list.json`;
 export const GREET_API = `${BASE_URL}/wapi/zpgeek/chat/start.json`;
 
 // 二维码登录
-export const QR_LOGIN_API = `${BASE_URL}/wapi/zppassport/qrcode/gen`;
-export const QR_CHECK_API = `${BASE_URL}/wapi/zppassport/qrcode/check`;
+export const QR_RANDKEY_URL = `${BASE_URL}/wapi/zppassport/captcha/randkey`;
+export const QR_CODE_URL = `${BASE_URL}/wapi/zpweixin/qrcode/getqrcode`;
+export const QR_SCAN_URL = `${BASE_URL}/wapi/zppassport/qrcode/scan`;
+export const QR_LOGIN_URL = `${BASE_URL}/wapi/zppassport/qrcode/scanLogin`;
+export const QR_DISPATCHER_URL = `${BASE_URL}/wapi/zppassport/qrcode/dispatcher`;
 
 // 默认 Headers（模拟 Chrome 145 on macOS）
 export const DEFAULT_HEADERS: Record<string, string> = {

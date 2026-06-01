@@ -10,7 +10,7 @@ import Database from 'better-sqlite3';
 import { execSync } from 'node:child_process';
 import QRCode from 'qrcode-terminal';
 import { Cookie, Credential } from './types/index.js';
-import { BROWSER_PATHS, CREDENTIAL_FILE, COOKIE_TTL_MS, QR_LOGIN_API, QR_CHECK_API, DEFAULT_HEADERS } from './constants.js';
+import { BROWSER_PATHS, CREDENTIAL_FILE, COOKIE_TTL_MS, QR_RANDKEY_URL, QR_CODE_URL, QR_SCAN_URL, QR_LOGIN_URL, QR_DISPATCHER_URL, DEFAULT_HEADERS } from './constants.js';
 import { encrypt, decrypt, EncryptedData } from './crypto.js';
 
 // ====== 工具函数 ======
@@ -109,7 +109,6 @@ function getChromiumKey(browser: string): Buffer | null {
   const platform = os.platform();
 
   if (platform === 'darwin') {
-    // macOS: 使用 security CLI 从钥匙链获取
     const keychainMap: Record<string, string> = {
       chrome: 'Chrome Safe Storage',
       'google-chrome': 'Chrome Safe Storage',
@@ -129,7 +128,6 @@ function getChromiumKey(browser: string): Buffer | null {
         return Buffer.from(result, 'utf-8');
       }
     } catch {
-      // macOS <10.15: Chrome 使用 "Chrome" 而非 "Chrome Safe Storage"
       try {
         const result = execSync(
           `security find-generic-password -wa 'Chrome' 2>/dev/null`,
@@ -146,13 +144,38 @@ function getChromiumKey(browser: string): Buffer | null {
   }
 
   if (platform === 'linux') {
-    // Linux: PBKDF2-HMAC-SHA1, password="peanuts", salt="saltysalt", iterations=1
+    // 方法 1: 尝试 secret-tool (gnome-keyring)
+    try {
+      const result = execSync(
+        'secret-tool lookup application chrome 2>/dev/null',
+        { encoding: 'utf-8' }
+      ).trim();
+      if (result && result.length > 0 && result.length >= 16) {
+        return Buffer.from(result, 'utf-8');
+      }
+    } catch {
+      // secret-tool 不可用
+    }
+
+    // 方法 2: 尝试 kwallet (KDE)
+    try {
+      const result = execSync(
+        'kwallet-query -r chrome kdewallet 2>/dev/null',
+        { encoding: 'utf-8' }
+      ).trim();
+      if (result && result.length > 0 && result.length >= 16) {
+        return Buffer.from(result, 'utf-8');
+      }
+    } catch {
+      // kwallet 不可用
+    }
+
+    // 方法 3: 回退到 PBKDF2 (旧版 Chrome, 兼容无密钥环环境)
     return crypto.pbkdf2Sync('peanuts', 'saltysalt', 1, 16, 'sha1');
   }
 
   if (platform === 'win32') {
-    // Windows: 不需要额外获取密钥（DPAPI 由系统处理）
-    return null;
+    return null; // Windows DPAPI 由系统处理
   }
 
   return null;
@@ -310,52 +333,130 @@ export function autoExtractCookies(cookieSource?: string): Cookie[] {
 // ====== 二维码登录 (T023) ======
 
 export async function qrcodeLogin(): Promise<Cookie[]> {
-  // 1. 生成二维码
-  const qrResponse = await fetch(QR_LOGIN_API, {
+  // Step 1: 获取 QR session
+  console.error('正在初始化二维码登录...');
+
+  const randKeyResp = await fetch(QR_RANDKEY_URL, {
+    method: 'POST',
     headers: DEFAULT_HEADERS,
   });
-  const qrData = await qrResponse.json() as Record<string, unknown>;
-  const qrCodeData = qrData.zpData || qrData;
+  const randKeyData = await randKeyResp.json() as Record<string, unknown>;
 
-  const qrId = String((qrCodeData as Record<string, unknown>).qrCode || '');
-  const qrUrl = String((qrCodeData as Record<string, unknown>).url || '');
-
-  if (!qrId) {
-    throw new Error('获取二维码失败，请重试');
+  if (randKeyData.code !== 0) {
+    throw new Error(`获取 QR session 失败: ${randKeyData.message || '未知错误'}`);
   }
 
-  // 2. 终端显示二维码
-  console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
-  QRCode.generate(qrUrl || qrId, { small: true });
-  console.error('\n等待扫码中...\n');
+  const sessionData = randKeyData.zpData as Record<string, unknown>;
+  const qrId = String(sessionData.qrId || '');
+  const randKey = String(sessionData.randKey || '');
 
-  // 3. 轮询检查扫码状态（每 2 秒，最多 120 秒）
+  if (!qrId) {
+    throw new Error('获取二维码失败：未返回有效的 qrId');
+  }
+
+  // Step 2: 获取二维码图片并渲染到终端
+  try {
+    const qrImgResp = await fetch(`${QR_CODE_URL}?content=${encodeURIComponent(qrId)}`, {
+      headers: DEFAULT_HEADERS,
+    });
+
+    if (qrImgResp.ok) {
+      // QR_CODE_URL 返回的是 PNG 图片，需要在终端渲染
+      // 使用 qrcode-terminal 渲染 URL 格式的内容
+      console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
+      QRCode.generate(`https://www.zhipin.com/m/?qrId=${qrId}`, { small: true });
+      console.error('\n等待扫码中...\n');
+    } else {
+      // 回退到直接渲染 qrId
+      console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
+      QRCode.generate(qrId, { small: true });
+      console.error('\n等待扫码中...\n');
+    }
+  } catch {
+    // 二维码图片获取失败，使用 qrId 直接渲染
+    console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
+    QRCode.generate(qrId, { small: true });
+    console.error('\n等待扫码中...\n');
+  }
+
+  // Step 3: 轮询等待扫码（最多 120 秒）
   const maxAttempts = 60;
   for (let i = 0; i < maxAttempts; i++) {
     await delay(2000);
 
     try {
-      const checkResponse = await fetch(`${QR_CHECK_API}?qrId=${qrId}`, {
+      const scanResp = await fetch(`${QR_SCAN_URL}?uuid=${encodeURIComponent(qrId)}`, {
         headers: DEFAULT_HEADERS,
+        signal: AbortSignal.timeout(35000), // 35s 长轮询
       });
-      const checkData = await checkResponse.json() as Record<string, unknown>;
+      const scanData = await scanResp.json() as Record<string, unknown>;
 
-      const status = checkData.code || (checkData.zpData as Record<string, unknown>)?.code;
-      if (status === 0 || status === '0') {
-        // 扫码成功，提取 Cookie
-        const setCookieHeader = checkResponse.headers.get('set-cookie');
-        const cookies = parseSetCookie(setCookieHeader || '');
-        if (cookies.length > 0) {
-          console.error('✓ 扫码登录成功');
-          return cookies;
-        }
-      }
-
-      const msg = String(checkData.message || (checkData.zpData as Record<string, unknown>)?.message || '');
-      if (msg.includes('已扫码') || msg.includes('确认')) {
+      if (scanData.scaned) {
         console.error('已扫码，等待确认...');
+
+        // Step 4: 等待用户确认登录
+        for (let j = 0; j < 60; j++) {
+          await delay(2000);
+
+          try {
+            const confirmResp = await fetch(`${QR_LOGIN_URL}?qrId=${encodeURIComponent(qrId)}`, {
+              headers: DEFAULT_HEADERS,
+              signal: AbortSignal.timeout(35000),
+            });
+            const confirmData = await confirmResp.json() as Record<string, unknown>;
+
+            if (confirmData.login === true) {
+              console.error('已确认登录，获取凭证...');
+
+              // Step 5: 通过 dispatcher 获取登录 Cookie
+              const dispatchResp = await fetch(
+                `${QR_DISPATCHER_URL}?qrId=${encodeURIComponent(qrId)}&pk=header-login`,
+                { headers: DEFAULT_HEADERS }
+              );
+
+              const setCookieHeader = dispatchResp.headers.get('set-cookie');
+              const cookies = parseSetCookie(setCookieHeader || '');
+
+              if (cookies.length > 0) {
+                console.error('✓ 扫码登录成功');
+                return cookies;
+              }
+
+              // 如果 set-cookie header 为空，尝试从 body 中提取
+              try {
+                const dispatchData = await dispatchResp.json() as Record<string, unknown>;
+                const zpRoute = dispatchData.zpData as Record<string, unknown> | undefined;
+                const redirectUrl = String(zpRoute?.redirectUrl || zpRoute?.redirect || '');
+                if (redirectUrl) {
+                  // 跟随重定向获取 Cookie
+                  const redirectResp = await fetch(redirectUrl, {
+                    headers: DEFAULT_HEADERS,
+                    redirect: 'manual',
+                  });
+                  const redirectCookies = parseSetCookie(redirectResp.headers.get('set-cookie') || '');
+                  if (redirectCookies.length > 0) {
+                    console.error('✓ 扫码登录成功');
+                    return redirectCookies;
+                  }
+                }
+              } catch {
+                // 忽略 body 解析错误
+              }
+
+              console.error('✓ 扫码登录成功（部分 Cookie 可能缺失）');
+              return cookies;
+            }
+          } catch {
+            // 网络超时，继续轮询
+          }
+        }
+
+        throw new Error('二维码确认超时（120 秒未确认），请重试');
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('超时')) {
+        throw err;
+      }
       // 网络错误，继续轮询
     }
   }
