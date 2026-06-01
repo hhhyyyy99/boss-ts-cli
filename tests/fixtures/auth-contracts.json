@@ -1,0 +1,22 @@
+{
+  "loginSuccess": {
+    "ok": true,
+    "schema_version": "1",
+    "data": {
+      "message": "登录成功",
+      "source": "browser",
+      "user": {
+        "displayName": "测试用户",
+        "accountType": "geek"
+      }
+    }
+  },
+  "loginVerificationFailure": {
+    "ok": false,
+    "schema_version": "1",
+    "data": null,
+    "error": {
+      "code": "auth_verification_failed"
+    }
+  }
+}

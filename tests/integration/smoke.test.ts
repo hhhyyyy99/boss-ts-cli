@@ -31,6 +31,9 @@ describe('Schema 封装', () => {
     expect(ErrorCodes.RATE_LIMITED).toBe('rate_limited');
     expect(ErrorCodes.API_ERROR).toBe('api_error');
     expect(ErrorCodes.UNKNOWN_ERROR).toBe('unknown_error');
+    expect(ErrorCodes.CREDENTIAL_ACQUISITION_FAILED).toBe('credential_acquisition_failed');
+    expect(ErrorCodes.AUTH_VERIFICATION_FAILED).toBe('auth_verification_failed');
+    expect(ErrorCodes.AUTH_VERIFICATION_UNKNOWN).toBe('auth_verification_unknown');
   });
 });
 
