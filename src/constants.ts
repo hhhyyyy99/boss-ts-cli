@@ -1,30 +1,24 @@
 // BOSS直聘 API 基础 URL
 export const BASE_URL = 'https://www.zhipin.com';
 
-// 搜索 API
+// ====== 搜索 ======
 export const SEARCH_API = `${BASE_URL}/wapi/zpgeek/search/joblist.json`;
-
-// 推荐 API
-export const RECOMMEND_API = `${BASE_URL}/wapi/zpgeek/recommend/geek.json`;
-
-// 新版推荐 API
-export const RECOMMEND_NEW_API = `${BASE_URL}/wapi/zpgeek/boss/recommend/geek.json`;
-
-// 职位详情 API
 export const JOB_DETAIL_API = `${BASE_URL}/wapi/zpgeek/job/detail.json`;
+export const JOB_HISTORY_API = `${BASE_URL}/wapi/zpgeek/history/joblist.json`;
 
-// 登录状态 API (用于验证认证)
-export const STATUS_API = `${BASE_URL}/wapi/zpgeek/search/joblist.json`;
+// ====== 推荐 ======
+export const RECOMMEND_API = `${BASE_URL}/wapi/zprelation/interaction/geekGetJob`;
 
-// 个人中心 API
-export const PROFILE_API = `${BASE_URL}/wapi/zpgeek/user/info.json`;
-export const APPLIED_API = `${BASE_URL}/wapi/zpgeek/apply/list.json`;
-export const INTERVIEWS_API = `${BASE_URL}/wapi/zpgeek/interview/list.json`;
-export const CHAT_LIST_API = `${BASE_URL}/wapi/zpgeek/chat/list.json`;
-export const HISTORY_API = `${BASE_URL}/wapi/zpgeek/history/list.json`;
+// ====== 个人中心 ======
+export const PROFILE_API = `${BASE_URL}/wapi/zpuser/wap/getUserInfo.json`;
+export const RESUME_BASEINFO_URL = `${BASE_URL}/wapi/zpgeek/resume/baseinfo/query.json`;
+export const RESUME_EXPECT_URL = `${BASE_URL}/wapi/zpgeek/resume/expect/query.json`;
+export const APPLIED_API = `${BASE_URL}/wapi/zprelation/resume/geekDeliverList`;
+export const INTERVIEWS_API = `${BASE_URL}/wapi/zpinterview/geek/interview/data.json`;
 
-// 打招呼 API
-export const GREET_API = `${BASE_URL}/wapi/zpgeek/chat/start.json`;
+// ====== 沟通 ======
+export const CHAT_LIST_API = `${BASE_URL}/wapi/zprelation/friend/getGeekFriendList.json`;
+export const GREET_API = `${BASE_URL}/wapi/zpgeek/friend/add.json`;
 
 // 二维码登录
 export const QR_RANDKEY_URL = `${BASE_URL}/wapi/zppassport/captcha/randkey`;

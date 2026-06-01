@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs';
 import { ApiClient } from '../client.js';
 import { handleCommand, isJsonMode, printInfo } from './common.js';
 import { readCache, writeCache } from '../index-cache.js';
-import { SEARCH_API, RECOMMEND_API, HISTORY_API, JOB_DETAIL_API, CITY_MAP } from '../constants.js';
+import { SEARCH_API, RECOMMEND_API, JOB_HISTORY_API, JOB_DETAIL_API, CITY_MAP } from '../constants.js';
 import { InvalidParamsError } from '../exceptions.js';
 import type { Job, SearchResponse, RecommendResponse, ApiResponse } from '../types/index.js';
 
@@ -328,9 +328,9 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           printInfo(chalk.gray('正在获取推荐职位...'));
         }
 
-        const response = await client.post<ApiResponse<RecommendResponse>>(
+        const response = await client.get<ApiResponse<RecommendResponse>>(
           RECOMMEND_API,
-          { page: pageNum, pageSize: 15 },
+          { page: pageNum, tag: 5, isActive: 'true', pageSize: 15 },
         );
 
         const zpData = response.zpData ?? (response as unknown as RecommendResponse);
@@ -397,7 +397,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
         }
 
         const response = await client.get<ApiResponse<{ jobList: Job[] }>>(
-          HISTORY_API,
+          JOB_HISTORY_API,
         );
 
         const zpData = response.zpData ?? (response as unknown as { jobList: Job[] });
