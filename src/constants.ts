@@ -20,6 +20,24 @@ export const INTERVIEWS_API = `${BASE_URL}/wapi/zpinterview/geek/interview/data.
 export const CHAT_LIST_API = `${BASE_URL}/wapi/zprelation/friend/getGeekFriendList.json`;
 export const GREET_API = `${BASE_URL}/wapi/zpgeek/friend/add.json`;
 
+// ====== 招聘方 (Boss) API ======
+export const BOSS_SEARCH_GEEK_URL = `${BASE_URL}/wapi/zpitem/web/boss/search/geek/info`;
+export const BOSS_VIEW_GEEK_URL = `${BASE_URL}/wapi/zpjob/view/geek/info`;
+export const BOSS_CHATTED_JOB_LIST_URL = `${BASE_URL}/wapi/zpjob/job/chatted/jobList`;
+export const BOSS_FRIEND_LIST_URL = `${BASE_URL}/wapi/zprelation/friend/filterByLabel`;
+export const BOSS_FRIEND_DETAIL_URL = `${BASE_URL}/wapi/zprelation/friend/getBossFriendListV2.json`;
+export const BOSS_LAST_MSG_URL = `${BASE_URL}/wapi/zpchat/boss/userLastMsg`;
+export const BOSS_HISTORY_MSG_URL = `${BASE_URL}/wapi/zpchat/boss/historyMsg`;
+export const BOSS_SEND_MSG_URL = `${BASE_URL}/wapi/zpchat/fastReply/sendReplyMsg`;
+export const BOSS_CHAT_GEEK_INFO_URL = `${BASE_URL}/wapi/zpjob/chat/geek/info`;
+export const BOSS_FRIEND_LABELS_URL = `${BASE_URL}/wapi/zprelation/friend/label/get`;
+export const BOSS_GREET_REC_SORT_URL = `${BASE_URL}/wapi/zprelation/friend/greetRecSortList`;
+export const BOSS_JOB_OFFLINE_URL = `${BASE_URL}/wapi/zpjob/job/offline`;
+export const BOSS_JOB_ONLINE_URL = `${BASE_URL}/wapi/zpjob/job/online`;
+export const BOSS_EXCHANGE_REQUEST_URL = `${BASE_URL}/wapi/zpchat/exchange/request`;
+export const BOSS_REMOVE_FILTER_URL = `${BASE_URL}/wapi/zprelation/friend/bossRemoveFilter`;
+export const BOSS_INTERVIEW_INVITE_URL = `${BASE_URL}/wapi/zpinterview/boss/interview/invite`;
+
 // 二维码登录
 export const QR_RANDKEY_URL = `${BASE_URL}/wapi/zppassport/captcha/randkey`;
 export const QR_CODE_URL = `${BASE_URL}/wapi/zpweixin/qrcode/getqrcode`;

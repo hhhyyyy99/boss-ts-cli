@@ -5,28 +5,8 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 import { ApiClient } from '../client.js';
 import { handleCommand, isJsonMode, printInfo, printError } from './common.js';
-import { BASE_URL } from '../constants.js';
+import { BASE_URL, BOSS_SEARCH_GEEK_URL, BOSS_VIEW_GEEK_URL, BOSS_CHATTED_JOB_LIST_URL, BOSS_FRIEND_LIST_URL, BOSS_FRIEND_DETAIL_URL, BOSS_HISTORY_MSG_URL, BOSS_SEND_MSG_URL, BOSS_FRIEND_LABELS_URL, BOSS_GREET_REC_SORT_URL, BOSS_JOB_OFFLINE_URL, BOSS_JOB_ONLINE_URL, BOSS_EXCHANGE_REQUEST_URL, BOSS_REMOVE_FILTER_URL, BOSS_INTERVIEW_INVITE_URL, CITY_MAP, EXP_CODES, DEGREE_CODES } from '../constants.js';
 
-// ============================================================
-// 招聘方 API 端点常量
-// ============================================================
-
-const RECRUITER_SEARCH_API = `${BASE_URL}/wapi/zpboss/geek/search.json`;
-const RECRUITER_RECOMMEND_API = `${BASE_URL}/wapi/zpboss/recommend/geek.json`;
-const RECRUITER_INBOX_API = `${BASE_URL}/wapi/zpboss/chat/inbox.json`;
-const RECRUITER_RESUME_API = `${BASE_URL}/wapi/zpboss/geek/resume.json`;
-const RECRUITER_JOB_LIST_API = `${BASE_URL}/wapi/zpboss/job/list.json`;
-const RECRUITER_CHAT_START_API = `${BASE_URL}/wapi/zpboss/chat/start.json`;
-const RECRUITER_CHAT_HISTORY_API = `${BASE_URL}/wapi/zpboss/chat/history.json`;
-const RECRUITER_CHAT_REPLY_API = `${BASE_URL}/wapi/zpboss/chat/reply.json`;
-const RECRUITER_REQUEST_RESUME_API = `${BASE_URL}/wapi/zpboss/chat/requestResume.json`;
-const RECRUITER_EXCHANGE_PHONE_API = `${BASE_URL}/wapi/zpboss/chat/exchangePhone.json`;
-const RECRUITER_EXCHANGE_WECHAT_API = `${BASE_URL}/wapi/zpboss/chat/exchangeWechat.json`;
-const RECRUITER_INVITE_INTERVIEW_API = `${BASE_URL}/wapi/zpboss/interview/create.json`;
-const RECRUITER_MARK_UNSUITABLE_API = `${BASE_URL}/wapi/zpboss/chat/unsuitable.json`;
-const RECRUITER_JOB_CLOSE_API = `${BASE_URL}/wapi/zpboss/job/close.json`;
-const RECRUITER_JOB_REOPEN_API = `${BASE_URL}/wapi/zpboss/job/reopen.json`;
-const RECRUITER_LABELS_API = `${BASE_URL}/wapi/zpboss/geek/labels.json`;
 
 // ============================================================
 // 工具函数
@@ -338,7 +318,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         if (options.exp) body.experience = options.exp;
         if (options.degree) body.degree = options.degree;
 
-        const data = await client.post<Record<string, unknown>>(RECRUITER_SEARCH_API, body);
+        const data = await client.post<Record<string, unknown>>(BOSS_SEARCH_GEEK_URL, body);
 
         if (!isJsonMode()) {
           const list = extractList(data, 'geekList');
@@ -377,7 +357,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         if (options.job) params.encryptJobId = options.job;
 
         const data = await client.get<Record<string, unknown>>(
-          RECRUITER_RECOMMEND_API,
+          BOSS_GREET_REC_SORT_URL,
           params
         );
 
@@ -414,7 +394,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         if (options.message) body.greeting = options.message;
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_CHAT_START_API,
+          BOSS_CHATTED_JOB_LIST_URL,
           body
         );
 
@@ -445,7 +425,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         };
         if (options.city) body.city = options.city;
 
-        const data = await client.post<Record<string, unknown>>(RECRUITER_SEARCH_API, body);
+        const data = await client.post<Record<string, unknown>>(BOSS_SEARCH_GEEK_URL, body);
 
         if (!isJsonMode()) {
           const list = extractList(data, 'geekList');
@@ -480,7 +460,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         if (options.job) params.encryptJobId = options.job;
 
         const data = await client.get<Record<string, unknown>>(
-          RECRUITER_INBOX_API,
+          BOSS_FRIEND_LIST_URL,
           params
         );
 
@@ -508,7 +488,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
     .action(async (friendId: string, message: string, options: Record<string, string | undefined>) => {
       await handleCommand(async () => {
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_CHAT_REPLY_API,
+          BOSS_SEND_MSG_URL,
           { friendId, message }
         );
 
@@ -532,7 +512,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
       await handleCommand(async () => {
         const page = parsePage(options.page as string);
         const data = await client.get<Record<string, unknown>>(
-          RECRUITER_CHAT_HISTORY_API,
+          BOSS_HISTORY_MSG_URL,
           { friendId, page, pageSize: 20 }
         );
 
@@ -569,7 +549,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_REQUEST_RESUME_API,
+          BOSS_EXCHANGE_REQUEST_URL,
           { friendId }
         );
 
@@ -601,7 +581,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_EXCHANGE_PHONE_API,
+          BOSS_EXCHANGE_REQUEST_URL,
           { friendId }
         );
 
@@ -633,7 +613,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_EXCHANGE_WECHAT_API,
+          BOSS_EXCHANGE_REQUEST_URL,
           { friendId }
         );
 
@@ -666,7 +646,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_INVITE_INTERVIEW_API,
+          BOSS_INTERVIEW_INVITE_URL,
           { encryptGeekId: geekId, encryptJobId: options.job }
         );
 
@@ -699,7 +679,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_MARK_UNSUITABLE_API,
+          BOSS_REMOVE_FILTER_URL,
           { encryptGeekId: geekId, encryptJobId: options.job }
         );
 
@@ -721,7 +701,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
     .action(async (encryptGeekId: string, options: Record<string, string | undefined>) => {
       await handleCommand(async () => {
         const data = await client.get<Record<string, unknown>>(
-          RECRUITER_RESUME_API,
+          BOSS_VIEW_GEEK_URL,
           { encryptGeekId }
         );
 
@@ -746,7 +726,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
     .action(async (encryptGeekId: string, options: Record<string, string | undefined>) => {
       await handleCommand(async () => {
         const data = await client.get<Record<string, unknown>>(
-          RECRUITER_RESUME_API,
+          BOSS_VIEW_GEEK_URL,
           { encryptGeekId, encryptJobId: options.job }
         );
 
@@ -775,7 +755,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
     .option('-j, --json', 'JSON 格式输出')
     .action(async (options: Record<string, string | undefined>) => {
       await handleCommand(async () => {
-        const data = await client.get<Record<string, unknown>>(RECRUITER_JOB_LIST_API);
+        const data = await client.get<Record<string, unknown>>(BOSS_CHATTED_JOB_LIST_URL);
 
         if (!isJsonMode()) {
           const jobs = extractList(data, 'jobList');
@@ -810,7 +790,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_JOB_CLOSE_API,
+          BOSS_JOB_OFFLINE_URL,
           { encryptJobId }
         );
 
@@ -842,7 +822,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         }
 
         const data = await client.post<Record<string, unknown>>(
-          RECRUITER_JOB_REOPEN_API,
+          BOSS_JOB_ONLINE_URL,
           { encryptJobId }
         );
 
@@ -863,7 +843,7 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
     .option('-j, --json', 'JSON 格式输出')
     .action(async (options: Record<string, string | undefined>) => {
       await handleCommand(async () => {
-        const data = await client.get<Record<string, unknown>>(RECRUITER_LABELS_API);
+        const data = await client.get<Record<string, unknown>>(BOSS_FRIEND_LABELS_URL);
 
         if (!isJsonMode()) {
           const labels = extractList(data, 'labelList');
@@ -900,13 +880,13 @@ export function registerRecruiterCommands(program: Command, client: ApiClient): 
         let data: Record<string, unknown>;
         try {
           data = await client.get<Record<string, unknown>>(
-            RECRUITER_RECOMMEND_API,
+            BOSS_GREET_REC_SORT_URL,
             { page: 1, pageSize: 200 }
           );
         } catch {
           // 如果推荐接口失败，尝试搜索
           data = await client.post<Record<string, unknown>>(
-            RECRUITER_SEARCH_API,
+            BOSS_SEARCH_GEEK_URL,
             { query: '', page: 1, pageSize: 200 }
           );
         }
