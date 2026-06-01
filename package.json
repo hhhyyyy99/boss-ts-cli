@@ -1,0 +1,47 @@
+{
+  "name": "boss-ts-cli",
+  "version": "0.1.0",
+  "description": "BOSS直聘 CLI 工具 — 搜索职位、管理投递、与招聘方沟通（TypeScript 版）",
+  "type": "module",
+  "bin": {
+    "boss": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["boss", "zhipin", "boss直聘", "cli", "job-search", "recruitment"],
+  "license": "Apache-2.0",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^12.1.0",
+    "ora": "^8.1.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.14.0",
+    "@types/qrcode-terminal": "^0.12.2",
+    "tsup": "^8.2.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
