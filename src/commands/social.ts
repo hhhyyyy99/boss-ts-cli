@@ -8,9 +8,7 @@ import Table from 'cli-table3';
 import ora from 'ora';
 import { ApiClient } from '../client.js';
 import { handleCommand, isJsonMode, printInfo, printError } from './common.js';
-import { BASE_URL, RATE_LIMIT_CONFIG } from '../constants.js';
-
-const GREET_API = `${BASE_URL}/wapi/zpgeek/chat/start.json`;
+import { BASE_URL, SEARCH_API, GREET_API, RATE_LIMIT_CONFIG } from '../constants.js';
 
 async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -23,11 +21,7 @@ export function registerSocialCommands(program: Command, client: ApiClient): voi
     .description('向招聘方发送打招呼')
     .action(async (securityId: string, options: { json?: boolean }) => {
       await handleCommand(async () => {
-        const result = await client.post(GREET_API, {
-          securityId,
-          // 标准打招呼消息
-          message: '您好，我对这个职位很感兴趣，希望能和您沟通一下',
-        });
+        const result = await client.get(GREET_API, { securityId });
 
         if (!isJsonMode()) {
           const data = result as Record<string, unknown>;
@@ -80,10 +74,9 @@ export function registerSocialCommands(program: Command, client: ApiClient): voi
         });
         params.pageSize = count;
 
-        const searchResult = await client.get('/wapi/zpgeek/search/joblist.json', params);
+        const searchResult = await client.get(SEARCH_API, params);
         const data = searchResult as Record<string, unknown>;
-        const zpData = data.zpData as Record<string, unknown> | undefined;
-        const jobList = (zpData?.jobList || data.jobList || []) as Array<{
+        const jobList = (data.jobList || []) as Array<{
           securityId: string;
           jobName: string;
           companyName: string;
@@ -134,7 +127,7 @@ export function registerSocialCommands(program: Command, client: ApiClient): voi
         for (let i = 0; i < targets.length; i++) {
           const job = targets[i];
           try {
-            await client.post(GREET_API, { securityId: job.securityId });
+            await client.get(GREET_API, { securityId: job.securityId });
             results.push({ securityId: job.securityId, jobName: job.jobName, success: true });
             successCount++;
 
