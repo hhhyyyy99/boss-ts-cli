@@ -332,11 +332,16 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
 
         const response = await client.get<ApiResponse<RecommendResponse>>(
           RECOMMEND_API,
-          { page: pageNum, tag: 5, isActive: 'true', pageSize: 15 },
+          { page: pageNum, tag: 5, isActive: 'true' },
         );
 
-        const zpData = response.zpData ?? (response as unknown as RecommendResponse);
-        const jobList: Job[] = zpData?.jobList ?? [];
+        // Python 版标准化: cardList → jobList
+        const data = response as unknown as Record<string, unknown>;
+        let jobList: Job[] = (data.jobList as Job[]) ?? [];
+        if (jobList.length === 0 && data.cardList) {
+          jobList = data.cardList as Job[];
+        }
+        const hasMore = data.hasMore as boolean | undefined;
 
         if (jobList.length === 0) {
           if (!isJsonMode()) {
@@ -377,7 +382,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           }
 
           printInfo(table.toString());
-          if (zpData?.hasMore) {
+          if (hasMore) {
             printInfo(chalk.gray(`第 ${pageNum} 页（下一页: -p ${pageNum + 1}）`));
           } else {
             printInfo(chalk.gray(`第 ${pageNum} 页`));
@@ -403,6 +408,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
 
         const response = await client.get<ApiResponse<{ jobList: Job[] }>>(
           JOB_HISTORY_API,
+          { page: 1 },
         );
 
         const zpData = response.zpData ?? (response as unknown as { jobList: Job[] });
