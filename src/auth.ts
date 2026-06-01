@@ -6,9 +6,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import { tmpdir } from 'node:os';
 import Database from 'better-sqlite3';
 import { execSync } from 'node:child_process';
 import QRCode from 'qrcode-terminal';
+import { Jimp } from 'jimp';
+import jsQR from 'jsqr';
 import { Cookie, Credential } from './types/index.js';
 import { BROWSER_PATHS, CREDENTIAL_FILE, COOKIE_TTL_MS, QR_RANDKEY_URL, QR_CODE_URL, QR_SCAN_URL, QR_LOGIN_URL, QR_DISPATCHER_URL, DEFAULT_HEADERS } from './constants.js';
 import { encrypt, decrypt, EncryptedData } from './crypto.js';
@@ -352,9 +355,21 @@ export function autoExtractCookies(cookieSource?: string): Cookie[] {
 
 // ====== 二维码登录 (T023) ======
 
+async function decodeQrFromImage(imageBuffer: Buffer): Promise<string | null> {
+  try {
+    const image = await Jimp.read(imageBuffer);
+    const { bitmap } = image;
+    const clamped = new Uint8ClampedArray(bitmap.data);
+    const qrResult = jsQR(clamped, bitmap.width, bitmap.height);
+    return qrResult?.data || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function qrcodeLogin(): Promise<Cookie[]> {
   // Step 1: 获取 QR session
-  console.error('正在初始化二维码登录...');
+  console.error('正在获取二维码...');
 
   const randKeyResp = await fetch(QR_RANDKEY_URL, {
     method: 'POST',
@@ -374,30 +389,52 @@ export async function qrcodeLogin(): Promise<Cookie[]> {
     throw new Error('获取二维码失败：未返回有效的 qrId');
   }
 
-  // Step 2: 获取二维码图片并渲染到终端
-  try {
-    const qrImgResp = await fetch(`${QR_CODE_URL}?content=${encodeURIComponent(qrId)}`, {
-      headers: DEFAULT_HEADERS,
-    });
+  // Step 2: 从 API 下载真正的二维码图片
+  const qrImgResp = await fetch(`${QR_CODE_URL}?content=${encodeURIComponent(qrId)}`, {
+    headers: DEFAULT_HEADERS,
+  });
 
-    if (qrImgResp.ok) {
-      // QR_CODE_URL 返回的是 PNG 图片，需要在终端渲染
-      // 使用 qrcode-terminal 渲染 URL 格式的内容
-      console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
-      QRCode.generate(`https://www.zhipin.com/m/?qrId=${qrId}`, { small: true });
-      console.error('\n等待扫码中...\n');
-    } else {
-      // 回退到直接渲染 qrId
-      console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
-      QRCode.generate(qrId, { small: true });
-      console.error('\n等待扫码中...\n');
+  if (!qrImgResp.ok) {
+    throw new Error(`获取二维码图片失败: HTTP ${qrImgResp.status}`);
+  }
+
+  const qrImageBuffer = Buffer.from(await qrImgResp.arrayBuffer());
+
+  // 保存图片到临时文件
+  const tmpFile = path.join(tmpdir(), `boss_qr_${Date.now()}.png`);
+  fs.writeFileSync(tmpFile, qrImageBuffer);
+  console.error(`  📁 二维码图片已保存到: ${tmpFile}`);
+
+  // 尝试打开系统图片查看器
+  try {
+    const platform = os.platform();
+    if (platform === 'linux') {
+      execSync(`xdg-open ${tmpFile} 2>/dev/null || echo ""`, { timeout: 3000 } as any);
+    } else if (platform === 'darwin') {
+      execSync(`open ${tmpFile}`, { timeout: 3000 } as any);
+    } else if (platform === 'win32') {
+      execSync(`start ${tmpFile}`, { timeout: 3000 } as any);
     }
   } catch {
-    // 二维码图片获取失败，使用 qrId 直接渲染
-    console.error('\n请使用 BOSS直聘 APP 扫描以下二维码登录:\n');
-    QRCode.generate(qrId, { small: true });
-    console.error('\n等待扫码中...\n');
+    // 无法打开查看器，继续终端渲染
   }
+
+  // Step 3: 解码 QR 内容并在终端渲染
+  const qrContent = await decodeQrFromImage(qrImageBuffer);
+
+  console.error('\n请使用 BOSS直聘 APP 扫描二维码登录:\n');
+
+  if (qrContent) {
+    // 用真正的 QR 内容渲染
+    QRCode.generate(qrContent, { small: true });
+  } else {
+    // 回退：直接渲染 API 返回的 qrId
+    console.error('(无法解码二维码，使用备用渲染)');
+    QRCode.generate(qrId, { small: true });
+  }
+
+  console.error(`\n如终端二维码无法识别，请直接打开图片: ${tmpFile}`);
+  console.error('等待扫码中...\n');
 
   // Step 3: 轮询等待扫码（最多 120 秒）
   const maxAttempts = 60;

@@ -18,7 +18,14 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["boss", "zhipin", "boss直聘", "cli", "job-search", "recruitment"],
+  "keywords": [
+    "boss",
+    "zhipin",
+    "boss直聘",
+    "cli",
+    "job-search",
+    "recruitment"
+  ],
   "license": "MIT",
   "author": "",
   "repository": {
@@ -33,6 +40,8 @@
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
+    "jimp": "^1.6.1",
+    "jsqr": "^1.4.0",
     "ora": "^8.1.0",
     "qrcode-terminal": "^0.12.0"
   },
