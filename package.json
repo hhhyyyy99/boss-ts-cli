@@ -1,6 +1,6 @@
 {
   "name": "boss-ts-cli",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "BOSS直聘 CLI 工具 — 搜索职位、管理投递、与招聘方沟通（TypeScript 版）",
   "type": "module",
   "bin": {
