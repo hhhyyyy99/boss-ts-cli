@@ -6,19 +6,13 @@ import {
   handleCommand,
   isJsonMode,
   printInfo,
-  extractData,
 } from './common.js';
 import {
   APPLIED_API,
   INTERVIEWS_API,
   CHAT_LIST_API,
 } from '../constants.js';
-import type {
-  Application,
-  Interview,
-  ChatMessage,
-  ApiResponse,
-} from '../types/index.js';
+import type {} from '../types/index.js';
 
 // ---------------------------------------------------------------------------
 // applied
@@ -31,25 +25,34 @@ function registerAppliedCommand(program: Command, client: ApiClient): void {
     .option('--json', 'JSON 格式输出')
     .action(async (options: { page: string; json?: boolean }) => {
       await handleCommand(async () => {
-        const response = await client.get(APPLIED_API, { page: parseInt(options.page, 10) }) as ApiResponse<Application[]>;
-        const data = extractData<Application[]>(response, 'zpData');
-        const list: Application[] = Array.isArray(data) ? data : [];
+        const response = await client.get(APPLIED_API, { page: parseInt(options.page, 10) }) as Record<string, unknown>;
+        // API 返回 { cardList: [...], totalCount: N }
+        const list = (response.cardList || response.jobList || []) as Array<Record<string, unknown>>;
+        const totalCount = response.totalCount as number || list.length;
 
         if (!isJsonMode()) {
           if (list.length === 0) {
             printInfo(chalk.yellow('暂无投递记录'));
           } else {
             const table = new Table({
-              head: [chalk.cyan('职位名称'), chalk.cyan('公司名称'), chalk.cyan('状态'), chalk.cyan('投递时间')],
+              head: [chalk.cyan('#'), chalk.cyan('职位名称'), chalk.cyan('公司名称'), chalk.cyan('薪资'), chalk.cyan('状态'), chalk.cyan('投递时间')],
             });
-            list.forEach(item => {
-              table.push([item.jobName || '-', item.companyName || '-', item.status || '-', item.appliedAt || '-']);
+            list.forEach((item, i) => {
+              table.push([
+                String(i + 1),
+                (item.jobName as string) || '-',
+                (item.companyName as string) || '-',
+                (item.salaryDesc as string) || '-',
+                (item.status as string) || '-',
+                (item.appliedAt as string) || '-',
+              ]);
             });
             printInfo(table.toString());
+            printInfo(chalk.gray(`共 ${totalCount} 条记录`));
           }
         }
 
-        return list;
+        return { cardList: list, totalCount };
       }, options);
     });
 }
@@ -64,9 +67,9 @@ function registerInterviewsCommand(program: Command, client: ApiClient): void {
     .option('--json', 'JSON 格式输出')
     .action(async (options: { json?: boolean }) => {
       await handleCommand(async () => {
-        const response = await client.get(INTERVIEWS_API) as ApiResponse<Interview[]>;
-        const data = extractData<Interview[]>(response, 'zpData');
-        const list: Interview[] = Array.isArray(data) ? data : [];
+        const response = await client.get(INTERVIEWS_API) as Record<string, unknown>;
+        // API 返回 { interviewList: [...] }
+        const list = (response.interviewList || []) as Array<Record<string, unknown>>;
 
         if (!isJsonMode()) {
           if (list.length === 0) {
@@ -76,7 +79,7 @@ function registerInterviewsCommand(program: Command, client: ApiClient): void {
               head: [chalk.cyan('公司名称'), chalk.cyan('职位名称'), chalk.cyan('面试时间'), chalk.cyan('地点'), chalk.cyan('状态')],
             });
             list.forEach(item => {
-              table.push([item.companyName || '-', item.jobName || '-', item.interviewTime || '-', item.address || '-', item.status || '-']);
+              table.push([String(item.companyName || '-'), String(item.jobName || '-'), String(item.interviewTime || '-'), String(item.address || '-'), String(item.status || '-')]);
             });
             printInfo(table.toString());
           }
@@ -97,19 +100,26 @@ function registerChatCommand(program: Command, client: ApiClient): void {
     .option('--json', 'JSON 格式输出')
     .action(async (options: { json?: boolean }) => {
       await handleCommand(async () => {
-        const response = await client.get(CHAT_LIST_API) as ApiResponse<ChatMessage[]>;
-        const data = extractData<ChatMessage[]>(response, 'zpData');
-        const list: ChatMessage[] = Array.isArray(data) ? data : [];
+        const response = await client.get(CHAT_LIST_API) as Record<string, unknown>;
+        // API 返回 { result: [...], friendList: [...] }
+        const list = (response.result || response.friendList || []) as Array<Record<string, unknown>>;
 
         if (!isJsonMode()) {
           if (list.length === 0) {
             printInfo(chalk.yellow('暂无沟通记录'));
           } else {
             const table = new Table({
-              head: [chalk.cyan('招聘者'), chalk.cyan('职位'), chalk.cyan('公司'), chalk.cyan('最后消息'), chalk.cyan('时间')],
+              head: [chalk.cyan('#'), chalk.cyan('招聘者'), chalk.cyan('公司'), chalk.cyan('职位'), chalk.cyan('最近消息')],
             });
-            list.forEach(item => {
-              table.push([item.bossName || '-', item.bossTitle || '-', item.companyName || '-', (item.lastMessage || '-').substring(0, 30), item.updatedAt || '-']);
+            list.forEach((item, i) => {
+              const lastMsg = (item.lastMsg || item.lastText || '-') as string;
+              table.push([
+                String(i + 1),
+                (item.name || item.bossName || '-') as string,
+                (item.brandName || '-') as string,
+                (item.jobName || '-') as string,
+                lastMsg.length > 40 ? lastMsg.slice(0, 37) + '...' : lastMsg,
+              ]);
             });
             printInfo(table.toString());
           }

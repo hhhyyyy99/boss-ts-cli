@@ -399,16 +399,19 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
   program
     .command('history')
     .description('查看最近浏览职位')
+    .option('-p, --page <page>', '页码', '1')
     .option('--json', 'JSON 格式输出')
     .action(async (options: Record<string, unknown>) => {
       await handleCommand(async () => {
+        const pageNum = parseInt(String(options.page ?? '1'), 10) || 1;
+
         if (!isJsonMode()) {
           printInfo(chalk.gray('正在获取浏览历史...'));
         }
 
         const response = await client.get<ApiResponse<{ jobList: Job[] }>>(
           JOB_HISTORY_API,
-          { page: 1 },
+          { page: pageNum },
         );
 
         const zpData = response.zpData ?? (response as unknown as { jobList: Job[] });
