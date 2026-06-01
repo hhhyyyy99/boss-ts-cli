@@ -98,4 +98,4 @@ boss export "Python" -n 50 -o jobs.csv
 
 ## License
 
-Apache-2.0
+MIT
