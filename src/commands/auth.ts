@@ -9,7 +9,7 @@ import ora from 'ora';
 import { ApiClient } from '../client.js';
 import { handleCommand, isJsonMode, printInfo } from './common.js';
 import { autoExtractCookies, qrcodeLogin, saveCredential, loadCredential, refreshIfNeeded } from '../auth.js';
-import { PROFILE_API, SEARCH_API, RECOMMEND_API } from '../constants.js';
+import { PROFILE_API, RESUME_BASEINFO_URL, SEARCH_API, RECOMMEND_API } from '../constants.js';
 import { ErrorCodes } from '../schema.js';
 
 export function registerAuthCommands(program: Command, client: ApiClient): void {
@@ -137,7 +137,7 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
         }
 
         try {
-          await client.get(RECOMMEND_API);
+          await client.get(RECOMMEND_API, { page: 1, tag: 5, isActive: 'true' });
           recommendAuthenticated = true;
         } catch {
           // 推荐 API 不可用
@@ -196,19 +196,18 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
         }
 
         client.setCookies(refreshed.cookies);
-        const data = await client.get(PROFILE_API);
+        const data = await client.get(RESUME_BASEINFO_URL);
         const profileData = (data as Record<string, unknown>).zpData || data;
 
         if (!isJsonMode()) {
           const profile = profileData as Record<string, unknown>;
           const table = new Table();
           table.push(
-            { '姓名': String(profile.name || '未知') },
+            { '姓名': String(profile.name || profile.nickName || '未知') },
+            { '性别': profile.gender === 1 ? '男' : profile.gender === 2 ? '女' : '未知' },
             { '年龄': String(profile.age || '未知') },
             { '学历': String(profile.degreeCategory || '未知') },
-            { '工作经验': String(profile.workYears || '未知') },
-            { '城市': String(profile.cityName || '未知') },
-            { '期望薪资': String(profile.expectSalary || '未知') },
+            { '账号': String(profile.account || '未知') },
           );
           printInfo(table.toString());
         }
