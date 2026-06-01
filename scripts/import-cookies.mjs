@@ -34,7 +34,7 @@ function saveCredential(cookies, source) {
   const dir = path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'boss-cli');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const now = new Date();
-  const credential = { cookies, source, createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + 7*24*60*60*1000).toISOString() };
+  const credential = { version: 1, cookies, source, createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + 7*24*60*60*1000).toISOString() };
   fs.writeFileSync(path.join(dir, 'credential.json'), JSON.stringify(encrypt(credential)));
 }
 
@@ -52,7 +52,7 @@ process.stdin.on('end', () => {
       domain: c.domain || '.zhipin.com',
       path: c.path || '/',
     }));
-    saveCredential(formatted, 'chrome');
+    saveCredential(formatted, 'browser');
     console.log('✅ 已导入 ' + formatted.length + ' 个 Cookie');
     const has = (n) => formatted.some(c => c.name === n);
     console.log('   __zp_stoken__: ' + (has('__zp_stoken__') ? '✅' : '❌ 缺失'));

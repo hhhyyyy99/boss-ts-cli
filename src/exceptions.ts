@@ -42,3 +42,15 @@ export class UnknownError extends BossApiError {
     this.name = 'UnknownError';
   }
 }
+
+export class AuthFlowError extends BossApiError {
+  public readonly stage: string;
+  public readonly nextActions: string[];
+
+  constructor(code: string, message: string, stage: string, nextActions: string[] = []) {
+    super(code, message);
+    this.name = 'AuthFlowError';
+    this.stage = stage;
+    this.nextActions = nextActions;
+  }
+}

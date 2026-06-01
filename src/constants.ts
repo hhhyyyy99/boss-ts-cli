@@ -52,13 +52,20 @@ export const QR_SCAN_URL = `${BASE_URL}/wapi/zppassport/qrcode/scan`;
 export const QR_LOGIN_URL = `${BASE_URL}/wapi/zppassport/qrcode/scanLogin`;
 export const QR_DISPATCHER_URL = `${BASE_URL}/wapi/zppassport/qrcode/dispatcher`;
 
-// 默认 Headers（模拟 Chrome 145 on macOS）
+// 默认 Headers（动态检测操作系统）
+import os from 'node:os';
+
+const platform = os.platform();
+const platformUA = platform === 'darwin' ? 'Macintosh; Intel Mac OS X 10_15_7' :
+  platform === 'win32' ? 'Windows NT 10.0; Win64; x64' :
+  'X11; Linux x86_64';
+
 export const DEFAULT_HEADERS: Record<string, string> = {
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'User-Agent': `Mozilla/5.0 (${platformUA}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36`,
   'Accept': 'application/json, text/plain, */*',
   'Sec-Ch-Ua': '"Chromium";v="145", "Not(A:Brand";v="99", "Google Chrome";v="145"',
   'Sec-Ch-Ua-Mobile': '?0',
-  'Sec-Ch-Ua-Platform': '"macOS"',
+  'Sec-Ch-Ua-Platform': platform === 'darwin' ? '"macOS"' : platform === 'win32' ? '"Windows"' : '"Linux"',
   'X-Requested-With': 'XMLHttpRequest',
   'Sec-Fetch-Site': 'same-origin',
   'Sec-Fetch-Mode': 'cors',

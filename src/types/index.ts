@@ -9,12 +9,55 @@ export interface Cookie {
   secure?: boolean;
 }
 
+export type LoginSource = 'browser' | 'qrcode' | 'web';
+
+export type LoginMethodName = 'browser_auto' | 'browser_specified' | 'qrcode' | 'web';
+
+export type LoginStage =
+  | 'credential_acquisition'
+  | 'awaiting_authorization'
+  | 'authorization_verification'
+  | 'credential_persistence'
+  | 'cancelled'
+  | 'timeout';
+
+export interface AccountSummary {
+  displayName: string | null;
+  accountType: string | null;
+  source: LoginSource;
+  verifiedAt: string;
+}
+
+export interface CandidateCredential {
+  cookies: Cookie[];
+  source: LoginSource;
+  method: LoginMethodName;
+  sourceDetail: string | null;
+  acquiredAt: string;
+}
+
+export interface AuthorizationVerificationResult {
+  status: 'verified' | 'rejected' | 'unknown';
+  stage: 'authorization_verification';
+  accountSummary: AccountSummary | null;
+  message: string;
+  nextActions: string[];
+}
+
 // 认证凭证
 export interface Credential {
+  version: number;       // 凭证格式版本（初始为 1），用于未来迁移
   cookies: Cookie[];
-  source: 'chrome' | 'firefox' | 'edge' | 'brave' | 'chromium' | 'opera' | 'vivaldi' | 'qrcode';
-  createdAt: string; // ISO 8601
-  expiresAt: string; // ISO 8601 (创建后7天)
+  source: LoginSource;
+  createdAt: string;     // ISO 8601
+  expiresAt: string;     // ISO 8601 (创建后7天)
+  accountSummary?: AccountSummary;
+  verifiedAt?: string;
+}
+
+export interface AuthenticatedSession extends Credential {
+  accountSummary: AccountSummary;
+  verifiedAt: string;
 }
 
 // 加密后的凭证存储格式
@@ -159,6 +202,16 @@ export interface ApiResponse<T = unknown> {
   message: string;
   zpData?: T;
   [key: string]: unknown;
+}
+
+// 浏览器 Cookie 数据库
+export interface BrowserCookieStore {
+  browserName: string;
+  platform: NodeJS.Platform;
+  profilePath: string;
+  dbPath: string;
+  encryptionVersion: number;
+  encryptedKey: Buffer | null;
 }
 
 // 候选人导出数据

@@ -4,19 +4,16 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { tmpdir } from 'node:os';
 import Database from 'better-sqlite3';
 import { execSync } from 'node:child_process';
-import { spawnSync } from 'node:child_process';
 import QRCode from 'qrcode-terminal';
-import { Jimp } from 'jimp';
-import jsQR from 'jsqr';
-import { Cookie, Credential } from './types/index.js';
-import { BROWSER_PATHS, CREDENTIAL_FILE, COOKIE_TTL_MS, QR_RANDKEY_URL, QR_CODE_URL, QR_SCAN_URL, QR_LOGIN_URL, QR_DISPATCHER_URL, DEFAULT_HEADERS } from './constants.js';
-import { encrypt, decrypt, EncryptedData } from './crypto.js';
+import { AccountSummary, AuthorizationVerificationResult, CandidateCredential, Cookie, Credential } from './types/index.js';
+import { BROWSER_PATHS, CREDENTIAL_FILE, COOKIE_TTL_MS, QR_RANDKEY_URL, QR_CODE_URL, QR_SCAN_URL, QR_LOGIN_URL, QR_DISPATCHER_URL, DEFAULT_HEADERS, RESUME_BASEINFO_URL } from './constants.js';
+import { encrypt, decrypt, EncryptedData, DecryptError } from './crypto.js';
+import { ApiClient } from './client.js';
+import { NotAuthenticatedError } from './exceptions.js';
 
 // ====== 工具函数 ======
 
@@ -302,54 +299,10 @@ export function decryptFirefoxCookies(_profilePath: string): Cookie[] {
   return [];
 }
 
-// ====== Python 浏览器 Cookie 提取桥接 ======
-
-function tryPythonBridge(browser: string): Cookie[] | null {
-  const PY_VENV = '/tmp/boss-cookie-extractor/bin/python3';
-  const scriptPath = path.resolve(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts', 'extract-cookies.py')
-  );
-
-  if (!fs.existsSync(scriptPath)) return null;
-
-  const python = fs.existsSync(PY_VENV) ? PY_VENV : null;
-
-  try {
-    const args = python
-      ? [scriptPath, browser]
-      : ['run', '--with', 'browser-cookie3', scriptPath, browser];
-    const proc = spawnSync(python || 'uv', args, { encoding: 'utf-8', timeout: 15000 });
-
-    if (proc.status !== 0 || !proc.stdout) return null;
-    const cookies = JSON.parse(proc.stdout) as Array<Record<string, unknown>>;
-    if (!Array.isArray(cookies) || cookies.length === 0) return null;
-
-    return cookies.map(c => ({
-      name: String(c.name || ''),
-      value: String(c.value || ''),
-      domain: String(c.domain || '.zhipin.com'),
-      path: String(c.path || '/'),
-      secure: Boolean(c.secure),
-      httpOnly: Boolean(c.httpOnly),
-    }));
-  } catch {
-    return null;
-  }
-}
-
-// ====== 统一 Cookie 提取 (T022) ======
+// ====== 统一 Cookie 提取 ======
 
 export function autoExtractCookies(cookieSource?: string): Cookie[] {
   const browser = cookieSource || '';
-
-  // 优先尝试 Python bridge（browser-cookie3 经充分测试）
-  if (browser !== 'firefox') {
-    const pyCookies = tryPythonBridge(browser || 'chrome');
-    if (pyCookies && pyCookies.length > 0) {
-      const zc = pyCookies.filter(c => c.domain.includes('zhipin.com') && c.name && c.value);
-      if (zc.length > 0) return zc;
-    }
-  }
 
   // 白名单校验
   if (cookieSource) {
@@ -401,211 +354,94 @@ export function autoExtractCookies(cookieSource?: string): Cookie[] {
   return [];
 }
 
-// ====== 二维码登录 (T023) ======
-
-async function decodeQrFromImage(imageBuffer: Buffer): Promise<string | null> {
-  try {
-    const image = await Jimp.read(imageBuffer);
-    const { bitmap } = image;
-    const clamped = new Uint8ClampedArray(bitmap.data);
-    const qrResult = jsQR(clamped, bitmap.width, bitmap.height);
-    return qrResult?.data || null;
-  } catch {
-    return null;
-  }
-}
-
-export async function qrcodeLogin(): Promise<Cookie[]> {
-  // Step 1: 获取 QR session
-  console.error('正在获取二维码...');
-
-  const randKeyResp = await fetch(QR_RANDKEY_URL, {
-    method: 'POST',
-    headers: DEFAULT_HEADERS,
-  });
-  const randKeyData = await randKeyResp.json() as Record<string, unknown>;
-
-  if (randKeyData.code !== 0) {
-    throw new Error(`获取 QR session 失败: ${randKeyData.message || '未知错误'}`);
-  }
-
-  const sessionData = randKeyData.zpData as Record<string, unknown>;
-  const qrId = String(sessionData.qrId || '');
-  const randKey = String(sessionData.randKey || '');
-
-  if (!qrId) {
-    throw new Error('获取二维码失败：未返回有效的 qrId');
-  }
-
-  // Step 2: 从 API 下载真正的二维码图片
-  const qrImgResp = await fetch(`${QR_CODE_URL}?content=${encodeURIComponent(qrId)}`, {
-    headers: DEFAULT_HEADERS,
-  });
-
-  if (!qrImgResp.ok) {
-    throw new Error(`获取二维码图片失败: HTTP ${qrImgResp.status}`);
-  }
-
-  const qrImageBuffer = Buffer.from(await qrImgResp.arrayBuffer());
-
-  // 保存图片到临时文件
-  const tmpFile = path.join(tmpdir(), `boss_qr_${Date.now()}.png`);
-  fs.writeFileSync(tmpFile, qrImageBuffer);
-  console.error(`  📁 二维码图片已保存到: ${tmpFile}`);
-
-  // 尝试打开系统图片查看器
-  try {
-    const platform = os.platform();
-    if (platform === 'linux') {
-      execSync(`xdg-open ${tmpFile} 2>/dev/null || echo ""`, { timeout: 3000 } as any);
-    } else if (platform === 'darwin') {
-      execSync(`open ${tmpFile}`, { timeout: 3000 } as any);
-    } else if (platform === 'win32') {
-      execSync(`start ${tmpFile}`, { timeout: 3000 } as any);
-    }
-  } catch {
-    // 无法打开查看器，继续终端渲染
-  }
-
-  // Step 3: 解码 QR 内容并在终端渲染
-  const qrContent = await decodeQrFromImage(qrImageBuffer);
-
-  console.error('\n请使用 BOSS直聘 APP 扫描二维码登录:\n');
-
-  if (qrContent) {
-    // 用真正的 QR 内容渲染
-    QRCode.generate(qrContent, { small: true });
-  } else {
-    // 回退：直接渲染 API 返回的 qrId
-    console.error('(无法解码二维码，使用备用渲染)');
-    QRCode.generate(qrId, { small: true });
-  }
-
-  console.error(`\n如终端二维码无法识别，请直接打开图片: ${tmpFile}`);
-  console.error('等待扫码中...\n');
-
-  // Step 3: 轮询等待扫码（最多 120 秒）
-  const maxAttempts = 60;
-  for (let i = 0; i < maxAttempts; i++) {
-    await delay(2000);
-
-    try {
-      const scanResp = await fetch(`${QR_SCAN_URL}?uuid=${encodeURIComponent(qrId)}`, {
-        headers: DEFAULT_HEADERS,
-        signal: AbortSignal.timeout(35000), // 35s 长轮询
-      });
-      const scanData = await scanResp.json() as Record<string, unknown>;
-
-      if (scanData.scaned) {
-        console.error('已扫码，等待确认...');
-
-        // Step 4: 等待用户确认登录
-        for (let j = 0; j < 60; j++) {
-          await delay(2000);
-
-          try {
-            const confirmResp = await fetch(`${QR_LOGIN_URL}?qrId=${encodeURIComponent(qrId)}`, {
-              headers: DEFAULT_HEADERS,
-              signal: AbortSignal.timeout(35000),
-            });
-            const confirmData = await confirmResp.json() as Record<string, unknown>;
-
-            if (confirmData.login === true) {
-              console.error('已确认登录，获取凭证...');
-
-              // Step 5: 通过 dispatcher 获取登录 Cookie
-              const dispatchResp = await fetch(
-                `${QR_DISPATCHER_URL}?qrId=${encodeURIComponent(qrId)}&pk=header-login`,
-                { headers: DEFAULT_HEADERS }
-              );
-
-              const setCookieHeader = dispatchResp.headers.get('set-cookie');
-              const cookies = parseSetCookie(setCookieHeader || '');
-
-              if (cookies.length > 0) {
-                console.error('✓ 扫码登录成功');
-                return cookies;
-              }
-
-              // 如果 set-cookie header 为空，尝试从 body 中提取
-              try {
-                const dispatchData = await dispatchResp.json() as Record<string, unknown>;
-                const zpRoute = dispatchData.zpData as Record<string, unknown> | undefined;
-                const redirectUrl = String(zpRoute?.redirectUrl || zpRoute?.redirect || '');
-                if (redirectUrl) {
-                  // 跟随重定向获取 Cookie
-                  const redirectResp = await fetch(redirectUrl, {
-                    headers: DEFAULT_HEADERS,
-                    redirect: 'manual',
-                  });
-                  const redirectCookies = parseSetCookie(redirectResp.headers.get('set-cookie') || '');
-                  if (redirectCookies.length > 0) {
-                    console.error('✓ 扫码登录成功');
-                    return redirectCookies;
-                  }
-                }
-              } catch {
-                // 忽略 body 解析错误
-              }
-
-              console.error('✓ 扫码登录成功（部分 Cookie 可能缺失）');
-              return cookies;
-            }
-          } catch {
-            // 网络超时，继续轮询
-          }
-        }
-
-        throw new Error('二维码确认超时（120 秒未确认），请重试');
-      }
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('超时')) {
-        throw err;
-      }
-      // 网络错误，继续轮询
-    }
-  }
-
-  throw new Error('二维码登录超时（120 秒未扫码），请重试');
-}
-
-function parseSetCookie(header: string): Cookie[] {
-  const cookies: Cookie[] = [];
-  if (!header) return cookies;
-
-  // Set-Cookie headers may contain multiple cookies separated by comma
-  // Each cookie: name=value; attr1; attr2; ...
-  for (const part of header.split(',')) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-
-    // First segment before ';' is name=value
-    const segments = trimmed.split(';');
-    const [nameValue] = segments;
-    if (!nameValue || !nameValue.includes('=')) continue;
-
-    const eqIdx = nameValue.indexOf('=');
-    const name = nameValue.substring(0, eqIdx).trim();
-    const value = nameValue.substring(eqIdx + 1).trim();
-
-    // 过滤无效 cookie 名（日期、路径、domain 等属性）
-    if (!name) continue;
-    if (name.startsWith('Expires') || name.startsWith('expires')) continue;
-    if (/^\d/.test(name)) continue; // 以数字开头（如日期）
-    if (name.includes(' ')) continue; // 包含空格
-
-    cookies.push({
-      name,
-      value: value || '',
-      domain: '.zhipin.com',
-      path: '/',
-    });
-  }
-
-  return cookies;
-}
-
 // ====== 凭证持久化 (T024) ======
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isCookie(value: unknown): value is Cookie {
+  if (!isRecord(value)) return false;
+  return typeof value.name === 'string' &&
+    typeof value.value === 'string' &&
+    typeof value.domain === 'string' &&
+    typeof value.path === 'string';
+}
+
+export function isCredential(value: unknown): value is Credential {
+  if (!isRecord(value)) return false;
+  const source = value.source;
+  return Array.isArray(value.cookies) &&
+    value.cookies.every(isCookie) &&
+    (source === 'browser' || source === 'qrcode' || source === 'web') &&
+    typeof value.createdAt === 'string' &&
+    typeof value.expiresAt === 'string';
+}
+
+function buildAccountSummary(profile: Record<string, unknown>, source: Credential['source']): AccountSummary {
+  const displayNameValue = profile.name || profile.nickName || profile.account || profile.mobile || null;
+  const accountTypeValue = profile.identity || profile.userType || profile.role || profile.type || null;
+  return {
+    displayName: displayNameValue == null ? null : String(displayNameValue),
+    accountType: accountTypeValue == null ? null : String(accountTypeValue),
+    source,
+    verifiedAt: new Date().toISOString(),
+  };
+}
+
+export async function verifyCandidateCredential(
+  candidate: CandidateCredential,
+  clientFactory: (cookies: Cookie[]) => Pick<ApiClient, 'get'> = cookies => new ApiClient(cookies),
+): Promise<AuthorizationVerificationResult> {
+  const nextActions = candidate.source === 'qrcode'
+    ? ['boss login --qrcode', 'boss login --web', 'boss login']
+    : candidate.source === 'web'
+      ? ['boss login --web', 'boss login --qrcode', 'boss login']
+      : ['boss login', 'boss login --qrcode', 'boss login --web'];
+
+  if (!candidate.cookies.length) {
+    return {
+      status: 'rejected',
+      stage: 'authorization_verification',
+      accountSummary: null,
+      message: '授权验证失败：未获取到可用的候选凭证',
+      nextActions,
+    };
+  }
+
+  try {
+    const client = clientFactory(candidate.cookies);
+    const profile = await client.get<Record<string, unknown>>(RESUME_BASEINFO_URL);
+    const profileData = (profile.zpData && isRecord(profile.zpData)) ? profile.zpData : profile;
+    return {
+      status: 'verified',
+      stage: 'authorization_verification',
+      accountSummary: buildAccountSummary(profileData, candidate.source),
+      message: '授权验证通过',
+      nextActions: [],
+    };
+  } catch (err) {
+    if (err instanceof NotAuthenticatedError) {
+      return {
+        status: 'rejected',
+        stage: 'authorization_verification',
+        accountSummary: null,
+        message: '授权验证失败：候选凭证无法访问当前用户信息',
+        nextActions,
+      };
+    }
+
+    return {
+      status: 'unknown',
+      stage: 'authorization_verification',
+      accountSummary: null,
+      message: err instanceof Error
+        ? `授权验证未完成：${err.message}`
+        : '授权验证未完成：服务响应异常',
+      nextActions,
+    };
+  }
+}
 
 export function saveCredential(cookies: Cookie[], source: string): void {
   const dir = getConfigDir();
@@ -615,6 +451,7 @@ export function saveCredential(cookies: Cookie[], source: string): void {
 
   const now = new Date();
   const credential: Credential = {
+    version: 1,
     cookies,
     source: source as Credential['source'],
     createdAt: now.toISOString(),
@@ -623,6 +460,35 @@ export function saveCredential(cookies: Cookie[], source: string): void {
 
   const encrypted = encrypt(credential as unknown as Record<string, unknown>);
   fs.writeFileSync(getCredentialPath(), JSON.stringify(encrypted), 'utf-8');
+}
+
+export function saveVerifiedCredential(
+  candidate: CandidateCredential,
+  verification: AuthorizationVerificationResult,
+): Credential {
+  if (verification.status !== 'verified' || !verification.accountSummary) {
+    throw new Error('拒绝保存未通过授权验证的凭证');
+  }
+
+  const dir = getConfigDir();
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  const now = new Date();
+  const credential: Credential = {
+    version: 2,
+    cookies: candidate.cookies,
+    source: candidate.source,
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + COOKIE_TTL_MS).toISOString(),
+    accountSummary: verification.accountSummary,
+    verifiedAt: verification.accountSummary.verifiedAt,
+  };
+
+  const encrypted = encrypt(credential as unknown as Record<string, unknown>);
+  fs.writeFileSync(getCredentialPath(), JSON.stringify(encrypted), 'utf-8');
+  return credential;
 }
 
 export function loadCredential(): Credential | null {
@@ -641,12 +507,16 @@ export function loadCredential(): Credential | null {
     const decrypted = decrypt(encrypted);
 
     // 验证 Credential 数据结构
-    if (!decrypted.cookies || !Array.isArray(decrypted.cookies) ||
-        !decrypted.source || !decrypted.createdAt || !decrypted.expiresAt) {
+    if (!isCredential(decrypted)) {
       throw new Error('凭证数据结构不完整');
     }
 
-    return decrypted as unknown as Credential;
+    // 兼容旧版无 version 字段的凭证
+    if (!decrypted.version) {
+      decrypted.version = 1;
+    }
+
+    return decrypted;
   } catch (err) {
     // 格式损坏或解密失败 → 删除损坏文件
     const filePath = getCredentialPath();
@@ -655,7 +525,16 @@ export function loadCredential(): Credential | null {
     } catch {
       // 文件可能不存在
     }
-    console.error('凭证文件已损坏，已清除。请重新登录: boss login');
+
+    if (err instanceof DecryptError) {
+      if (err.code === 'KEY_MISMATCH') {
+        console.error('本地凭证已失效（可能由于系统环境变更），请重新登录: boss login');
+      } else {
+        console.error(`凭证文件已损坏（${err.message}），已清除。请重新登录: boss login`);
+      }
+    } else {
+      console.error('凭证文件已损坏，已清除。请重新登录: boss login');
+    }
     return null;
   }
 }
@@ -668,10 +547,30 @@ export function refreshIfNeeded(cred: Credential): Credential | null {
     return cred; // 未过期
   }
 
-  // 尝试从原始浏览器刷新
-  const cookies = autoExtractCookies(cred.source !== 'qrcode' ? cred.source : undefined);
+  const source = cred.source;
+
+  // 根据来源选择续期方式
+  if (source === 'browser') {
+    // 浏览器提取的凭证 → 重试浏览器自动提取
+    const cookies = autoExtractCookies();
+    if (cookies.length > 0) {
+      saveCredential(cookies, source);
+      return loadCredential();
+    }
+  } else if (source === 'qrcode') {
+    // 二维码登录的凭证 → 提示重新扫码，不能自动续期
+    console.error('凭证已过期，请使用 boss login --qrcode 重新扫码登录');
+    return null;
+  } else if (source === 'web') {
+    // 浏览器页面登录的凭证 → 提示重新浏览器登录
+    console.error('凭证已过期，请使用 boss login --web 重新登录');
+    return null;
+  }
+
+  // 尝试浏览器自动提取作为回退
+  const cookies = autoExtractCookies();
   if (cookies.length > 0) {
-    saveCredential(cookies, cred.source);
+    saveCredential(cookies, 'browser');
     return loadCredential();
   }
 

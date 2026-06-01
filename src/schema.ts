@@ -26,4 +26,10 @@ export const ErrorCodes = {
   INVALID_PARAMS: 'invalid_params',
   API_ERROR: 'api_error',
   UNKNOWN_ERROR: 'unknown_error',
+  CREDENTIAL_ACQUISITION_FAILED: 'credential_acquisition_failed',
+  AUTHORIZATION_PENDING_TIMEOUT: 'authorization_pending_timeout',
+  AUTH_VERIFICATION_FAILED: 'auth_verification_failed',
+  AUTH_VERIFICATION_UNKNOWN: 'auth_verification_unknown',
+  CREDENTIAL_PERSISTENCE_FAILED: 'credential_persistence_failed',
+  LOGIN_CANCELLED: 'login_cancelled',
 } as const;

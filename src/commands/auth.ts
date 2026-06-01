@@ -3,72 +3,142 @@
  * login, logout, status, me
  */
 import { Command } from 'commander';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import ora from 'ora';
 import { ApiClient } from '../client.js';
+import { CandidateCredential, Cookie } from '../types/index.js';
+import { qrcodeLogin } from '../login/qrcode.js';
+import { webLogin } from '../login/web-login.js';
+import { candidateFromCookies } from '../login/index.js';
 import { handleCommand, isJsonMode, printInfo } from './common.js';
-import { autoExtractCookies, qrcodeLogin, saveCredential, loadCredential, refreshIfNeeded } from '../auth.js';
-import { PROFILE_API, RESUME_BASEINFO_URL, SEARCH_API, RECOMMEND_API } from '../constants.js';
+import { autoDetectCandidate, extractCandidateFromBrowser, getBrowserProfiles } from '../browsers/index.js';
+import { loadCredential, refreshIfNeeded, saveVerifiedCredential, verifyCandidateCredential } from '../auth.js';
+import { RESUME_BASEINFO_URL, SEARCH_API, RECOMMEND_API, CREDENTIAL_FILE } from '../constants.js';
 import { ErrorCodes } from '../schema.js';
+import { AuthFlowError } from '../exceptions.js';
 
 export function registerAuthCommands(program: Command, client: ApiClient): void {
   // boss login
   program
     .command('login')
-    .description('登录 BOSS直聘（自动提取浏览器 Cookie 或扫码登录）')
-    .option('--cookie-source <browser>', '指定浏览器 (chrome/firefox/edge/brave/chromium/opera/vivaldi)')
-    .option('--qrcode', '强制使用二维码登录')
-    .action(async (options: { cookieSource?: string; qrcode?: boolean; json?: boolean }) => {
+    .description('登录 BOSS直聘（默认自动提取浏览器 Cookie，也可扫码或浏览器页面登录）')
+    .option('--qrcode', '使用二维码扫码登录')
+    .option('--web', '使用浏览器页面登录')
+    .option('--browser <name>', '指定浏览器 (chrome/edge/brave/firefox)')
+    .option('--cookie-path <path>', '指定 Cookie 数据库文件路径（仅 Chromium 系列）')
+    .option('--profile <name>', '指定浏览器用户配置文件名称 (如 "Default", "Profile 1")')
+    .action(async (options: { qrcode?: boolean; web?: boolean; browser?: string; cookiePath?: string; profile?: string; json?: boolean }) => {
       await handleCommand(async () => {
-        let cookies = null;
-        let source = '';
+        let candidate: CandidateCredential;
 
         if (options.qrcode) {
-          // 强制二维码
+          // 二维码登录
           const spinner = ora('生成二维码...').start();
           try {
-            cookies = await qrcodeLogin();
-            source = 'qrcode';
+            const cookies = await qrcodeLogin();
+            candidate = candidateFromCookies(cookies, 'qrcode', 'qrcode', 'qrcode');
             spinner.stop();
           } catch (err) {
             spinner.stop();
             throw err;
           }
+        } else if (options.web) {
+          // 浏览器页面登录
+          try {
+            const cookies = await webLogin();
+            candidate = candidateFromCookies(cookies, 'web', 'web', 'browser cookie recovery');
+          } catch (err) {
+            if (!isJsonMode() && !(err instanceof AuthFlowError)) {
+              printInfo(chalk.red('浏览器登录失败。请确认系统支持打开浏览器，或使用 --qrcode 方式登录'));
+            }
+            throw err;
+          }
         } else {
-          // 先尝试浏览器提取
+          // 浏览器 Cookie 自动提取
           const spinner = ora('正在从浏览器提取 Cookie...').start();
-          cookies = autoExtractCookies(options.cookieSource);
+
+          if (options.browser) {
+            candidate = extractCandidateFromBrowser(options.browser, {
+              cookiePath: options.cookiePath,
+              profile: options.profile,
+            });
+          } else {
+            candidate = autoDetectCandidate();
+          }
+
           spinner.stop();
 
-          if (cookies.length > 0) {
-            source = options.cookieSource || 'chrome';
+          if (candidate.cookies.length > 0) {
             if (!isJsonMode()) {
-              printInfo(chalk.green(`✓ 已从浏览器提取 ${cookies.length} 个 Cookie`));
+              printInfo(chalk.green(`✓ 已从浏览器提取 ${candidate.cookies.length} 个候选 Cookie，正在验证授权...`));
             }
           } else {
-            // 回退到二维码登录
+            // 未找到有效 Cookie，提示备选方案
             if (!isJsonMode()) {
-              printInfo(chalk.yellow('浏览器 Cookie 提取失败，回退到二维码登录...'));
-              printInfo(chalk.gray('提示：可直接使用 boss login --qrcode 跳过浏览器检测'));
+              printInfo(chalk.yellow('未检测到有效登录会话'));
+              if (options.browser) {
+                const profiles = getBrowserProfiles(options.browser);
+                if (profiles.length > 0) {
+                  printInfo(chalk.gray(`检测到以下配置文件: ${profiles.join(', ')}`));
+                  printInfo(chalk.gray('使用 --profile <name> 指定配置文件'));
+                }
+              }
+              printInfo(chalk.gray('\n可使用以下方式登录:'));
+              printInfo(chalk.gray('  boss login --qrcode  扫码登录'));
+              printInfo(chalk.gray('  boss login --web     浏览器页面登录'));
+              printInfo(chalk.gray(`  boss login --browser <name>  指定浏览器 (chrome/edge/brave/firefox)`));
             }
-            cookies = await qrcodeLogin();
-            source = 'qrcode';
+            throw new AuthFlowError(
+              ErrorCodes.CREDENTIAL_ACQUISITION_FAILED,
+              '未检测到可验证的登录会话',
+              'credential_acquisition',
+              ['boss login --qrcode', 'boss login --web'],
+            );
           }
         }
 
-        if (!cookies || cookies.length === 0) {
-          throw new Error('登录失败，未获取到有效 Cookie');
+        if (!candidate.cookies.length) {
+          throw new AuthFlowError(
+            ErrorCodes.CREDENTIAL_ACQUISITION_FAILED,
+            '登录失败，未获取到可验证的候选凭证',
+            'credential_acquisition',
+            ['boss login --qrcode', 'boss login --web', 'boss login'],
+          );
         }
 
-        saveCredential(cookies, source);
-        client.setCookies(cookies);
+        const verification = await verifyCandidateCredential(candidate);
+        if (verification.status !== 'verified' || !verification.accountSummary) {
+          const code = verification.status === 'unknown'
+            ? ErrorCodes.AUTH_VERIFICATION_UNKNOWN
+            : ErrorCodes.AUTH_VERIFICATION_FAILED;
+          throw new AuthFlowError(
+            code,
+            `${verification.message}。${verification.nextActions.length ? `可尝试：${verification.nextActions.join(' / ')}` : ''}`,
+            'authorization_verification',
+            verification.nextActions,
+          );
+        }
+
+        const credential = saveVerifiedCredential(candidate, verification);
+        client.setCookies(candidate.cookies);
+        const userInfo = verification.accountSummary.displayName || '已验证账号';
 
         if (!isJsonMode()) {
-          printInfo(chalk.green('\n✓ 登录成功！'));
+          printInfo(chalk.green(`\n✓ 登录成功！当前用户: ${userInfo}`));
+          printInfo(chalk.gray(`登录来源: ${credential.source}`));
         }
 
-        return { message: '登录成功', cookieCount: cookies.length, source };
+        return {
+          message: '登录成功',
+          cookieCount: candidate.cookies.length,
+          source: credential.source,
+          user: verification.accountSummary,
+          expiresAt: credential.expiresAt,
+        };
       }, { json: options.json });
     });
 
@@ -86,12 +156,18 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
           return { message: '未登录' };
         }
 
-        // 清除凭证文件
+        // 彻底清除凭证文件
         client.setCookies([]);
-        saveCredential([], 'qrcode'); // 覆盖为空
+        const base = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+        const credPath = path.join(base, 'boss-cli', CREDENTIAL_FILE);
+        try {
+          fs.unlinkSync(credPath);
+        } catch {
+          // 文件可能已被删除
+        }
 
         if (!isJsonMode()) {
-          printInfo(chalk.green('✓ 已退出登录'));
+          printInfo(chalk.green('✓ 已退出登录，本地凭证已清除'));
         }
 
         return { message: '已退出登录' };
@@ -150,6 +226,7 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
             { 'Cookie 数量': String(refreshed.cookies.length) },
             { '凭证来源': refreshed.source },
             { '凭证有效期': refreshed.expiresAt },
+            { '最近验证': refreshed.verifiedAt || '旧版凭证未记录' },
             { '搜索 API': searchAuthenticated ? chalk.green('✓') : chalk.red('✗') },
             { '推荐 API': recommendAuthenticated ? chalk.green('✓') : chalk.red('✗') },
           );
@@ -161,6 +238,8 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
           cookieCount: refreshed.cookies.length,
           source: refreshed.source,
           expiresAt: refreshed.expiresAt,
+          user: refreshed.accountSummary || null,
+          verifiedAt: refreshed.verifiedAt || null,
           searchAuthenticated,
           recommendAuthenticated,
         };

@@ -51,12 +51,17 @@ import { loadCredential, refreshIfNeeded } from './auth.js';
 const client = new ApiClient();
 
 // 自动加载已保存的凭证
-const savedCredential = loadCredential();
-if (savedCredential) {
-  const refreshed = refreshIfNeeded(savedCredential);
-  if (refreshed) {
-    client.setCookies(refreshed.cookies);
+try {
+  const savedCredential = loadCredential();
+  if (savedCredential) {
+    const refreshed = refreshIfNeeded(savedCredential);
+    if (refreshed) {
+      client.setCookies(refreshed.cookies);
+    }
   }
+} catch (err) {
+  // 凭证加载静默失败（已由 loadCredential 输出错误信息）
+  // 用户可通过 boss login 重新登录
 }
 
 // 注册所有命令模块

@@ -43,6 +43,13 @@ export interface EncryptedData {
   ciphertext: string; // Base64
 }
 
+export class DecryptError extends Error {
+  constructor(message: string, public readonly code: 'BAD_FORMAT' | 'DECRYPT_FAILED' | 'KEY_MISMATCH') {
+    super(message);
+    this.name = 'DecryptError';
+  }
+}
+
 // 加密 JSON 数据
 export function encrypt(plaintext: Record<string, unknown>): EncryptedData {
   const iv = crypto.randomBytes(IV_LENGTH);
@@ -66,6 +73,10 @@ export function encrypt(plaintext: Record<string, unknown>): EncryptedData {
 
 // 解密数据
 export function decrypt(encrypted: EncryptedData): Record<string, unknown> {
+  if (!encrypted.iv || !encrypted.authTag || !encrypted.ciphertext) {
+    throw new DecryptError('凭证文件格式无效', 'BAD_FORMAT');
+  }
+
   const iv = Buffer.from(encrypted.iv, 'base64');
   const authTag = Buffer.from(encrypted.authTag, 'base64');
   const ciphertext = Buffer.from(encrypted.ciphertext, 'base64');
@@ -75,12 +86,18 @@ export function decrypt(encrypted: EncryptedData): Record<string, unknown> {
   });
   decipher.setAuthTag(authTag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]);
-
-  return JSON.parse(decrypted.toString('utf-8'));
+  try {
+    const decrypted = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
+    return JSON.parse(decrypted.toString('utf-8'));
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      throw new DecryptError('凭证数据已损坏', 'DECRYPT_FAILED');
+    }
+    throw new DecryptError('凭证解密失败，密钥不匹配（可能由于系统环境变更）', 'KEY_MISMATCH');
+  }
 }
 
 // 重新设置加密密钥（用于单元测试）
