@@ -31,11 +31,10 @@ export const QR_DISPATCHER_URL = `${BASE_URL}/wapi/zppassport/qrcode/dispatcher`
 export const DEFAULT_HEADERS: Record<string, string> = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/plain, */*',
-  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-  'Sec-Ch-Ua': '"Chromium";v="145", "Google Chrome";v="145"',
+  'Sec-Ch-Ua': '"Chromium";v="145", "Not(A:Brand";v="99", "Google Chrome";v="145"',
   'Sec-Ch-Ua-Mobile': '?0',
   'Sec-Ch-Ua-Platform': '"macOS"',
-  'DNT': '1',
+  'X-Requested-With': 'XMLHttpRequest',
   'Sec-Fetch-Site': 'same-origin',
   'Sec-Fetch-Mode': 'cors',
   'Sec-Fetch-Dest': 'empty',
@@ -108,6 +107,42 @@ export const STAGE_OPTIONS = ['未融资', '天使轮', 'A轮', 'B轮', 'C轮', 
 
 // 职位类型选项
 export const JOB_TYPE_OPTIONS = ['全职', '兼职', '实习'];
+
+// ====== 筛选编码映射 ======
+export const SALARY_CODES: Record<string, string> = {
+  '3K以下': '401', '3-5K': '402', '5-10K': '403', '10-15K': '404',
+  '15-20K': '405', '20-30K': '406', '30-50K': '407', '50K以上': '408',
+};
+
+export const EXP_CODES: Record<string, string> = {
+  '不限': '0', '在校/应届': '108', '1年以内': '101', '1-3年': '102',
+  '3-5年': '103', '5-10年': '104', '10年以上': '105',
+};
+
+export const DEGREE_CODES: Record<string, string> = {
+  '不限': '0', '初中及以下': '209', '中专/中技': '208', '高中': '206',
+  '大专': '202', '本科': '203', '硕士': '204', '博士': '205',
+};
+
+export const INDUSTRY_CODES: Record<string, string> = {
+  '不限': '0', '互联网': '100020', '电子商务': '100021', '游戏': '100024',
+  '人工智能': '100901', '金融': '100101', '教育培训': '100200',
+  '医疗健康': '100300', '移动互联网': '100020', '数据服务': '100032', '企业服务': '100032',
+};
+
+export const SCALE_CODES: Record<string, string> = {
+  '不限': '0', '0-20人': '301', '20-99人': '302', '100-499人': '303',
+  '500-999人': '304', '1000-9999人': '305', '10000人以上': '306',
+};
+
+export const STAGE_CODES: Record<string, string> = {
+  '不限': '0', '未融资': '801', '天使轮': '802', 'A轮': '803',
+  'B轮': '804', 'C轮': '805', 'D轮及以上': '806', '已上市': '807', '不需要融资': '808',
+};
+
+export const JOB_TYPE_CODES: Record<string, string> = {
+  '全职': '1901', '实习': '1902', '兼职': '1903',
+};
 
 // 浏览器 Cookie 数据库路径
 export const BROWSER_PATHS: Record<string, Record<string, string | null>> = {

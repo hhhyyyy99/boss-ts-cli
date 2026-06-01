@@ -525,20 +525,30 @@ function parseSetCookie(header: string): Cookie[] {
   const cookies: Cookie[] = [];
   if (!header) return cookies;
 
+  // Set-Cookie headers may contain multiple cookies separated by comma
+  // Each cookie: name=value; attr1; attr2; ...
   for (const part of header.split(',')) {
     const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // First segment before ';' is name=value
     const segments = trimmed.split(';');
     const [nameValue] = segments;
-    if (!nameValue) continue;
+    if (!nameValue || !nameValue.includes('=')) continue;
 
-    const [name, ...valueParts] = nameValue.split('=');
-    const value = valueParts.join('=');
+    const eqIdx = nameValue.indexOf('=');
+    const name = nameValue.substring(0, eqIdx).trim();
+    const value = nameValue.substring(eqIdx + 1).trim();
 
-    if (!name || !name.trim()) continue;
+    // 过滤无效 cookie 名（日期、路径、domain 等属性）
+    if (!name) continue;
+    if (name.startsWith('Expires') || name.startsWith('expires')) continue;
+    if (/^\d/.test(name)) continue; // 以数字开头（如日期）
+    if (name.includes(' ')) continue; // 包含空格
 
     cookies.push({
-      name: name.trim(),
-      value: (value || '').trim(),
+      name,
+      value: value || '',
       domain: '.zhipin.com',
       path: '/',
     });

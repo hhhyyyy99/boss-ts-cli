@@ -117,8 +117,8 @@ describe('ApiClient', () => {
     });
 
     expect(params.query).toBe('golang');
-    expect(params.city).toBe('杭州');
-    expect(params.salary).toBe('20-30K');
+    expect(params.city).toBe('101210100'); // 城市名转为编码
+    expect(params.salary).toBe('406');     // 薪资转为编码
     expect(params.page).toBe(2);
     expect(params.pageSize).toBe(15);
   });

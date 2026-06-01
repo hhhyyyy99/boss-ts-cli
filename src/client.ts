@@ -1,5 +1,5 @@
 import { Cookie, SearchParams } from './types/index.js';
-import { BASE_URL, DEFAULT_HEADERS, RATE_LIMIT_CONFIG } from './constants.js';
+import { BASE_URL, DEFAULT_HEADERS, RATE_LIMIT_CONFIG, CITY_MAP, SALARY_CODES, EXP_CODES, DEGREE_CODES, INDUSTRY_CODES, SCALE_CODES, STAGE_CODES, JOB_TYPE_CODES } from './constants.js';
 import { NotAuthenticatedError, RateLimitedError, ApiError } from './exceptions.js';
 
 // 高斯随机数（Box-Muller 方法）
@@ -111,7 +111,7 @@ export class ApiClient {
     }
   }
 
-  // 处理 API 响应
+  // 处理 API 响应（对齐 Python 版 _handle_response）
   private async handleApiResponse<T>(response: Response): Promise<T> {
     // HTML redirect detection — 被重定向到登录页
     const contentType = response.headers.get('content-type') || '';
@@ -130,38 +130,47 @@ export class ApiClient {
       throw new ApiError('Failed to parse API response');
     }
 
-    // BOSS直聘 API 错误码
     const code = data.code as number | undefined;
+    const message = data.message as string || '';
 
+    // 成功 — 返回 zpData
+    if (code === 0) {
+      this.consecutiveErrors = 0;
+      this.cooldownStep = Math.max(0, this.cooldownStep - 1);
+      this.requestDelay = Math.max(0, this.requestDelay - 0.1);
+      return (data.zpData || data) as T;
+    }
+
+    // 频率限制 (code=9)
     if (code === 9) {
-      // 频率限制 — 进入冷却
       this.consecutiveErrors++;
-      const stepIndex = Math.min(
-        this.cooldownStep,
-        RATE_LIMIT_CONFIG.cooldownSteps.length - 1
-      );
+      const stepIndex = Math.min(this.cooldownStep, RATE_LIMIT_CONFIG.cooldownSteps.length - 1);
       const cooldownSec = RATE_LIMIT_CONFIG.cooldownSteps[stepIndex];
       this.cooldownUntil = Date.now() + cooldownSec * 1000;
       this.cooldownStep++;
       this.requestDelay = Math.min(this.requestDelay + 0.5, 5);
+      throw new RateLimitedError(`频率限制，系统正在自动冷却 ${cooldownSec} 秒...`);
+    }
 
-      throw new RateLimitedError(
-        `频率限制，系统正在自动冷却 ${cooldownSec} 秒...`
+    // 会话过期 (code=37)
+    if (code === 37) {
+      throw new NotAuthenticatedError(message || '会话已过期，请重新登录');
+    }
+
+    // 参数错误 (code=17, 19)
+    if (code === 17 || code === 19) {
+      throw new ApiError(`${message} (code=${code})`);
+    }
+
+    // 安全拦截 (code=121, 122)
+    if (code === 121 || code === 122) {
+      throw new ApiError(
+        `请求被安全系统拦截 (code=${code})。此操作需要浏览器环境的安全验证，CLI 暂不支持。请在 BOSS直聘 网页端完成此操作。`
       );
     }
 
-    // 成功响应 — 重置状态
-    this.consecutiveErrors = 0;
-    this.cooldownStep = Math.max(0, this.cooldownStep - 1);
-    this.requestDelay = Math.max(0, this.requestDelay - 0.1);
-
-    // 认证相关错误
-    const message = data.message as string || '';
-    if (message.includes('未登录') || message.includes('登录') || message.includes('__zp_stoken__')) {
-      throw new NotAuthenticatedError(message);
-    }
-
-    return data as T;
+    // 其他错误
+    throw new ApiError(`${message} (code=${code})`);
   }
 
   // 核心请求方法
@@ -195,6 +204,12 @@ export class ApiClient {
       ...DEFAULT_HEADERS,
       'Referer': BASE_URL + '/',
     };
+
+    // zp_token: 从 bst cookie 提取
+    const bstCookie = this.cookies.find(c => c.name === 'bst');
+    if (bstCookie?.value) {
+      headers['zp_token'] = bstCookie.value;
+    }
 
     const cookieHeader = this.getCookieHeader();
     if (cookieHeader) {
@@ -293,18 +308,22 @@ export class ApiClient {
   buildSearchParams(params: SearchParams): Record<string, string | number | undefined> {
     const apiParams: Record<string, string | number | undefined> = {
       query: params.keyword,
+      city: CITY_MAP['全国'] || '100010000', // 默认全国
       page: params.page || 1,
       pageSize: 15,
     };
 
-    if (params.city) apiParams.city = params.city;
-    if (params.salary) apiParams.salary = params.salary;
-    if (params.exp) apiParams.experience = params.exp;
-    if (params.degree) apiParams.degree = params.degree;
-    if (params.industry) apiParams.industry = params.industry;
-    if (params.scale) apiParams.scale = params.scale;
-    if (params.stage) apiParams.stage = params.stage;
-    if (params.jobType) apiParams.jobType = params.jobType;
+    // 城市名转编码
+    if (params.city) {
+      apiParams.city = CITY_MAP[params.city] || params.city;
+    }
+    if (params.salary) apiParams.salary = SALARY_CODES[params.salary] || params.salary;
+    if (params.exp) apiParams.experience = EXP_CODES[params.exp] || params.exp;
+    if (params.degree) apiParams.degree = DEGREE_CODES[params.degree] || params.degree;
+    if (params.industry) apiParams.industry = INDUSTRY_CODES[params.industry] || params.industry;
+    if (params.scale) apiParams.scale = SCALE_CODES[params.scale] || params.scale;
+    if (params.stage) apiParams.stage = STAGE_CODES[params.stage] || params.stage;
+    if (params.jobType) apiParams.jobType = JOB_TYPE_CODES[params.jobType] || params.jobType;
 
     return apiParams;
   }

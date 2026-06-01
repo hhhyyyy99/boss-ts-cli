@@ -132,18 +132,20 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           params,
         );
 
-        // Extract the zpData payload; fallback to treating the whole response
-        // as SearchResponse when running against mocks or alternate endpoints.
-        const zpData = response.zpData ?? (response as unknown as SearchResponse);
-        const jobList: Job[] = zpData?.jobList ?? [];
-        const totalCount: number = zpData?.totalCount ?? 0;
+        // handleApiResponse 已返回 zpData，直接使用
+        const jobList: Job[] = (response as unknown as SearchResponse)?.jobList ?? [];
+        const totalCount: number = (response as unknown as SearchResponse)?.totalCount ?? 0;
 
-        // --- Error cases ---
+        // 空结果 — 显示提示但不算错误
         if (jobList.length === 0) {
-          if (pageNum > 1) {
-            throw new InvalidParamsError('已到达最后一页');
+          if (!isJsonMode()) {
+            if (pageNum > 1) {
+              printInfo(chalk.yellow('已到达最后一页'));
+            } else {
+              printInfo(chalk.yellow('未找到匹配职位，请调整搜索条件'));
+            }
           }
-          throw new InvalidParamsError('未找到匹配职位，请调整搜索条件');
+          return { jobList: [], totalCount: 0, page: pageNum };
         }
 
         // --- Write cache ---
@@ -206,7 +208,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           );
         }
 
-        return zpData;
+        return response;
       }, { json: options.json === true });
     });
 
@@ -337,7 +339,10 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
         const jobList: Job[] = zpData?.jobList ?? [];
 
         if (jobList.length === 0) {
-          throw new InvalidParamsError('暂无推荐职位');
+          if (!isJsonMode()) {
+            printInfo(chalk.yellow('暂无推荐职位'));
+          }
+          return { jobList: [], page: pageNum, hasMore: false };
         }
 
         if (!isJsonMode()) {
@@ -379,7 +384,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           }
         }
 
-        return zpData;
+        return response;
       }, { json: options.json === true });
     });
 
@@ -433,7 +438,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           printInfo(chalk.gray(`共 ${jobList.length} 条记录`));
         }
 
-        return zpData;
+        return response;
       }, { json: options.json === true });
     });
 
