@@ -4,11 +4,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { tmpdir } from 'node:os';
 import Database from 'better-sqlite3';
 import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import QRCode from 'qrcode-terminal';
 import { Jimp } from 'jimp';
 import jsQR from 'jsqr';
@@ -300,9 +302,55 @@ export function decryptFirefoxCookies(_profilePath: string): Cookie[] {
   return [];
 }
 
+// ====== Python 浏览器 Cookie 提取桥接 ======
+
+function tryPythonBridge(browser: string): Cookie[] | null {
+  const PY_VENV = '/tmp/boss-cookie-extractor/bin/python3';
+  const scriptPath = path.resolve(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts', 'extract-cookies.py')
+  );
+
+  if (!fs.existsSync(scriptPath)) return null;
+
+  const python = fs.existsSync(PY_VENV) ? PY_VENV : null;
+
+  try {
+    const args = python
+      ? [scriptPath, browser]
+      : ['run', '--with', 'browser-cookie3', scriptPath, browser];
+    const proc = spawnSync(python || 'uv', args, { encoding: 'utf-8', timeout: 15000 });
+
+    if (proc.status !== 0 || !proc.stdout) return null;
+    const cookies = JSON.parse(proc.stdout) as Array<Record<string, unknown>>;
+    if (!Array.isArray(cookies) || cookies.length === 0) return null;
+
+    return cookies.map(c => ({
+      name: String(c.name || ''),
+      value: String(c.value || ''),
+      domain: String(c.domain || '.zhipin.com'),
+      path: String(c.path || '/'),
+      secure: Boolean(c.secure),
+      httpOnly: Boolean(c.httpOnly),
+    }));
+  } catch {
+    return null;
+  }
+}
+
 // ====== 统一 Cookie 提取 (T022) ======
 
 export function autoExtractCookies(cookieSource?: string): Cookie[] {
+  const browser = cookieSource || '';
+
+  // 优先尝试 Python bridge（browser-cookie3 经充分测试）
+  if (browser !== 'firefox') {
+    const pyCookies = tryPythonBridge(browser || 'chrome');
+    if (pyCookies && pyCookies.length > 0) {
+      const zc = pyCookies.filter(c => c.domain.includes('zhipin.com') && c.name && c.value);
+      if (zc.length > 0) return zc;
+    }
+  }
+
   // 白名单校验
   if (cookieSource) {
     if (!SUPPORTED_BROWSERS.includes(cookieSource as SupportedBrowser)) {
