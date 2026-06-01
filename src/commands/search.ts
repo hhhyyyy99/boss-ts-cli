@@ -411,11 +411,14 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
 
         const response = await client.get<ApiResponse<{ jobList: Job[] }>>(
           JOB_HISTORY_API,
-          { page: pageNum },
+          { page: pageNum, pageSize: 15 },
         );
 
-        const zpData = response.zpData ?? (response as unknown as { jobList: Job[] });
-        const jobList: Job[] = zpData?.jobList ?? [];
+        const zpData = response.zpData ?? (response as unknown as Record<string, unknown>);
+        const jobList = ((zpData as Record<string, unknown>)?.jobList ||
+          (zpData as Record<string, unknown>)?.cardList ||
+          (zpData as Record<string, unknown>)?.list ||
+          []) as Job[];
 
         if (jobList.length === 0) {
           throw new InvalidParamsError('暂无浏览历史');
