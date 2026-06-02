@@ -12,14 +12,14 @@ import { ErrorCodes } from '../schema.js';
 import { autoDetectCookies } from '../browsers/index.js';
 
 const LOGIN_URL = `${BASE_URL}/web/user/?ka=header-login`;
-const WEB_LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
+export const WEB_LOGIN_TIMEOUT_MS = 90 * 1000;
 const POLL_INTERVAL_MS = 2000;
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function openBrowser(url: string): void {
+export function openBrowser(url: string): void {
   const platform = os.platform();
 
   if (platform === 'darwin') {
@@ -94,18 +94,22 @@ export async function webLogin(): Promise<Cookie[]> {
       await delay(POLL_INTERVAL_MS);
     }
 
-    throw new AuthFlowError(
-      ErrorCodes.AUTHORIZATION_PENDING_TIMEOUT,
-      '浏览器登录超时（5 分钟）：未能从本机浏览器检测或导入可验证 Cookie。请确认浏览器已登录 BOSS直聘，或使用 boss login --qrcode',
-      'timeout',
-      ['boss login --web', 'boss login --qrcode', 'boss login --browser <name>'],
-    );
+    throw createWebLoginTimeoutError();
   } finally {
     importServer.close();
   }
 }
 
-async function startCookieImportServer(): Promise<{
+export function createWebLoginTimeoutError(): AuthFlowError {
+  return new AuthFlowError(
+    ErrorCodes.AUTHORIZATION_PENDING_TIMEOUT,
+    '浏览器登录超时（90 秒）：未能从本机浏览器检测或导入可验证 Cookie。请确认浏览器已登录 BOSS直聘；如果页面已登录但 CLI 无反应，请使用页面导入命令或改用扫码登录',
+    'timeout',
+    ['boss login --web', 'boss login --qrcode', 'boss login --browser <name>'],
+  );
+}
+
+export async function startCookieImportServer(): Promise<{
   importUrl: string | null;
   consumeCookies: () => Cookie[];
   close: () => void;
@@ -154,7 +158,7 @@ async function startCookieImportServer(): Promise<{
 }
 
 /** 解析原始 Cookie 头字符串 */
-function parseRawCookieHeader(header: string): Cookie[] {
+export function parseRawCookieHeader(header: string): Cookie[] {
   const cookies: Cookie[] = [];
   if (!header) return cookies;
 

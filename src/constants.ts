@@ -63,6 +63,10 @@ const platformUA = platform === 'darwin' ? 'Macintosh; Intel Mac OS X 10_15_7' :
 export const DEFAULT_HEADERS: Record<string, string> = {
   'User-Agent': `Mozilla/5.0 (${platformUA}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36`,
   'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+  'Origin': BASE_URL,
+  'DNT': '1',
+  'Priority': 'u=1, i',
   'Sec-Ch-Ua': '"Chromium";v="145", "Not(A:Brand";v="99", "Google Chrome";v="145"',
   'Sec-Ch-Ua-Mobile': '?0',
   'Sec-Ch-Ua-Platform': platform === 'darwin' ? '"macOS"' : platform === 'win32' ? '"Windows"' : '"Linux"',

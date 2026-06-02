@@ -32,4 +32,6 @@ export const ErrorCodes = {
   AUTH_VERIFICATION_UNKNOWN: 'auth_verification_unknown',
   CREDENTIAL_PERSISTENCE_FAILED: 'credential_persistence_failed',
   LOGIN_CANCELLED: 'login_cancelled',
+  HISTORY_MISSING_CONTEXT: 'history_missing_context',
+  HISTORY_EMPTY: 'history_empty',
 } as const;

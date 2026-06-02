@@ -36,6 +36,7 @@ program
     }
     if (opts.verbose) {
       setVerbose(true);
+      client.setVerbose(true);
     }
   });
 

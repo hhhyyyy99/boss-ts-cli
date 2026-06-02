@@ -19,7 +19,34 @@ import { autoDetectCandidate, extractCandidateFromBrowser, getBrowserProfiles } 
 import { loadCredential, refreshIfNeeded, saveVerifiedCredential, verifyCandidateCredential } from '../auth.js';
 import { RESUME_BASEINFO_URL, SEARCH_API, RECOMMEND_API, CREDENTIAL_FILE } from '../constants.js';
 import { ErrorCodes } from '../schema.js';
-import { AuthFlowError } from '../exceptions.js';
+import { AuthFlowError, InvalidParamsError } from '../exceptions.js';
+
+type LoginOptions = {
+  qrcode?: boolean;
+  web?: boolean;
+  browser?: string;
+  cookieSource?: string;
+  cookiePath?: string;
+  profile?: string;
+  json?: boolean;
+};
+
+export function resolveBrowserSourceOptions(options: Pick<LoginOptions, 'browser' | 'cookieSource'>): string | undefined {
+  if (options.browser && options.cookieSource) {
+    throw new InvalidParamsError('不能同时指定 --browser 和 --cookie-source，请只选择一个浏览器来源');
+  }
+  return options.browser || options.cookieSource;
+}
+
+export function createNoBrowserSessionError(browser?: string): AuthFlowError {
+  const sourceHint = browser ? `指定浏览器 ${browser}` : '本机浏览器';
+  return new AuthFlowError(
+    ErrorCodes.CREDENTIAL_ACQUISITION_FAILED,
+    `未能从${sourceHint}回收可验证登录会话；请改用浏览器页面登录或扫码登录继续授权`,
+    'credential_acquisition',
+    ['boss login --web', 'boss login --qrcode', 'boss login --browser <name>'],
+  );
+}
 
 export function registerAuthCommands(program: Command, client: ApiClient): void {
   // boss login
@@ -29,11 +56,13 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
     .option('--qrcode', '使用二维码扫码登录')
     .option('--web', '使用浏览器页面登录')
     .option('--browser <name>', '指定浏览器 (chrome/edge/brave/firefox)')
+    .option('--cookie-source <name>', '指定浏览器 Cookie 来源（兼容 --browser）')
     .option('--cookie-path <path>', '指定 Cookie 数据库文件路径（仅 Chromium 系列）')
     .option('--profile <name>', '指定浏览器用户配置文件名称 (如 "Default", "Profile 1")')
-    .action(async (options: { qrcode?: boolean; web?: boolean; browser?: string; cookiePath?: string; profile?: string; json?: boolean }) => {
+    .action(async (options: LoginOptions) => {
       await handleCommand(async () => {
         let candidate: CandidateCredential;
+        const browserSource = resolveBrowserSourceOptions(options);
 
         if (options.qrcode) {
           // 二维码登录
@@ -61,8 +90,8 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
           // 浏览器 Cookie 自动提取
           const spinner = ora('正在从浏览器提取 Cookie...').start();
 
-          if (options.browser) {
-            candidate = extractCandidateFromBrowser(options.browser, {
+          if (browserSource) {
+            candidate = extractCandidateFromBrowser(browserSource, {
               cookiePath: options.cookiePath,
               profile: options.profile,
             });
@@ -80,24 +109,20 @@ export function registerAuthCommands(program: Command, client: ApiClient): void 
             // 未找到有效 Cookie，提示备选方案
             if (!isJsonMode()) {
               printInfo(chalk.yellow('未检测到有效登录会话'));
-              if (options.browser) {
-                const profiles = getBrowserProfiles(options.browser);
+              if (browserSource) {
+                const profiles = getBrowserProfiles(browserSource);
                 if (profiles.length > 0) {
                   printInfo(chalk.gray(`检测到以下配置文件: ${profiles.join(', ')}`));
                   printInfo(chalk.gray('使用 --profile <name> 指定配置文件'));
                 }
               }
               printInfo(chalk.gray('\n可使用以下方式登录:'));
-              printInfo(chalk.gray('  boss login --qrcode  扫码登录'));
               printInfo(chalk.gray('  boss login --web     浏览器页面登录'));
+              printInfo(chalk.gray('  boss login --qrcode  扫码登录'));
               printInfo(chalk.gray(`  boss login --browser <name>  指定浏览器 (chrome/edge/brave/firefox)`));
+              printInfo(chalk.gray(`  boss login --cookie-source <name>  指定浏览器 Cookie 来源`));
             }
-            throw new AuthFlowError(
-              ErrorCodes.CREDENTIAL_ACQUISITION_FAILED,
-              '未检测到可验证的登录会话',
-              'credential_acquisition',
-              ['boss login --qrcode', 'boss login --web'],
-            );
+            throw createNoBrowserSessionError(browserSource);
           }
         }
 

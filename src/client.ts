@@ -133,6 +133,10 @@ export class ApiClient {
     const code = data.code as number | undefined;
     const message = data.message as string || '';
 
+    if (this.verbose && code !== 0) {
+      console.error(`[API] code=${code ?? 'unknown'} message=${message || '<empty>'}`);
+    }
+
     // 成功 — 返回 zpData
     if (code === 0) {
       this.consecutiveErrors = 0;

@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { extractCandidateFromBrowser } from '../../src/browsers/index.js';
+import { resolveBrowserSourceOptions } from '../../src/commands/auth.js';
 
 vi.mock('../../src/browsers/chromium.js', () => ({
   extractChromiumCookies: () => [
-    { name: '__zp_stoken__', value: 'token', domain: '.zhipin.com', path: '/' },
+    { name: '__zp_stoken__', value: 'fixture-stoken', domain: '.zhipin.com', path: '/' },
   ],
 }));
 
@@ -35,5 +36,14 @@ describe('specified browser candidate', () => {
     expect(result.method).toBe('browser_specified');
     expect(result.sourceDetail).toBe('edge');
     expect(result.cookies).toEqual([]);
+  });
+
+  it('maps --cookie-source to the specified browser source', () => {
+    expect(resolveBrowserSourceOptions({ cookieSource: 'chrome' })).toBe('chrome');
+  });
+
+  it('rejects ambiguous --browser and --cookie-source input', () => {
+    expect(() => resolveBrowserSourceOptions({ browser: 'chrome', cookieSource: 'edge' }))
+      .toThrow('不能同时指定');
   });
 });

@@ -5,8 +5,10 @@ import { writeFileSync } from 'node:fs';
 import { ApiClient } from '../client.js';
 import { handleCommand, isJsonMode, printInfo } from './common.js';
 import { readCache, writeCache } from '../index-cache.js';
-import { SEARCH_API, RECOMMEND_API, JOB_HISTORY_API, JOB_DETAIL_API, CITY_MAP } from '../constants.js';
-import { InvalidParamsError } from '../exceptions.js';
+import { SEARCH_API, RECOMMEND_API, JOB_HISTORY_API, JOB_DETAIL_API, CITY_MAP, WEB_GEEK_HISTORY_URL } from '../constants.js';
+import { ApiError, BossApiError, HistoryRequestError, InvalidParamsError, NotAuthenticatedError } from '../exceptions.js';
+import { ErrorCodes } from '../schema.js';
+import { detectHistoryJobIdsFromBrowsers } from '../browsers/history-storage.js';
 import type { Job, SearchResponse, RecommendResponse, ApiResponse } from '../types/index.js';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +31,74 @@ function escapeCsvField(field: string): string {
     return `"${field.replace(/"/g, '""')}"`;
   }
   return field;
+}
+
+export function buildHistoryParams(jobIds: string[]): Record<string, string> {
+  return {
+    jobIds: jobIds.join(','),
+  };
+}
+
+export function ensureHistoryAuthenticated(client: Pick<ApiClient, 'getCookies'>): void {
+  if (client.getCookies().length === 0) {
+    throw new NotAuthenticatedError('未登录，请先执行 boss login 后再查看浏览历史');
+  }
+}
+
+export function normalizeHistoryResponse(response: unknown, page: number): { jobList: Job[]; page: number; hasMore: boolean } {
+  const data = (response && typeof response === 'object')
+    ? response as Record<string, unknown>
+    : {};
+  const zpData = (data.zpData && typeof data.zpData === 'object')
+    ? data.zpData as Record<string, unknown>
+    : data;
+  const jobList = (
+    zpData.jobList ||
+    zpData.cardList ||
+    zpData.list ||
+    []
+  ) as Job[];
+  return {
+    jobList,
+    page,
+    hasMore: Boolean(zpData.hasMore),
+  };
+}
+
+export function classifyHistoryError(err: unknown): BossApiError {
+  if (err instanceof NotAuthenticatedError) {
+    return new NotAuthenticatedError('登录会话不可用或已过期，请先执行 boss login 刷新授权');
+  }
+
+  if (err instanceof ApiError && (err.message.includes('code=17') || err.message.includes('code=19') || err.message.includes('缺少必要参数'))) {
+    return new HistoryRequestError(
+      ErrorCodes.HISTORY_MISSING_CONTEXT,
+      '浏览历史请求缺少 BOSS 要求的上下文，CLI 已隐藏底层参数错误。请先执行 boss login --web 刷新浏览器授权后重试；如果仍失败，请在网页端确认浏览历史页面可打开',
+      ['boss login --web', 'boss history -p=1'],
+    );
+  }
+
+  if (err instanceof BossApiError) {
+    return err;
+  }
+
+  return new HistoryRequestError(
+    ErrorCodes.API_ERROR,
+    err instanceof Error ? `浏览历史请求失败：${err.message}` : '浏览历史请求失败：远端服务响应异常',
+    ['boss history -p=1', 'boss login --web'],
+  );
+}
+
+async function warmHistoryRequestContext(client: ApiClient): Promise<void> {
+  try {
+    await client.get(WEB_GEEK_HISTORY_URL);
+  } catch (err) {
+    if (err instanceof NotAuthenticatedError) {
+      throw err;
+    }
+    // The page request normally returns HTML, which ApiClient classifies as ApiError.
+    // Cookies are merged before response classification, so non-auth HTML errors can be ignored.
+  }
 }
 
 /**
@@ -404,24 +474,43 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
     .action(async (options: Record<string, unknown>) => {
       await handleCommand(async () => {
         const pageNum = parseInt(String(options.page ?? '1'), 10) || 1;
+        ensureHistoryAuthenticated(client);
 
         if (!isJsonMode()) {
           printInfo(chalk.gray('正在获取浏览历史...'));
         }
 
-        const response = await client.get<ApiResponse<{ jobList: Job[] }>>(
-          JOB_HISTORY_API,
-          { page: pageNum, pageSize: 15 },
-        );
+        await warmHistoryRequestContext(client);
+        const browserHistory = detectHistoryJobIdsFromBrowsers();
+        const pageSize = 15;
+        const pageJobIds = browserHistory.jobIds.slice((pageNum - 1) * pageSize, pageNum * pageSize);
 
-        const zpData = response.zpData ?? (response as unknown as Record<string, unknown>);
-        const jobList = ((zpData as Record<string, unknown>)?.jobList ||
-          (zpData as Record<string, unknown>)?.cardList ||
-          (zpData as Record<string, unknown>)?.list ||
-          []) as Job[];
+        if (pageJobIds.length === 0) {
+          if (!isJsonMode()) {
+            printInfo(chalk.yellow('暂无可同步的浏览历史'));
+            printInfo(chalk.gray('BOSS 网页端历史接口依赖浏览器本地 _Job_History 缓存；请先在同一浏览器打开几个职位详情后重试。'));
+          }
+          return { jobList: [], page: pageNum, hasMore: false };
+        }
+
+        let response: ApiResponse<{ jobList: Job[] }>;
+        try {
+          response = await client.get<ApiResponse<{ jobList: Job[] }>>(
+            JOB_HISTORY_API,
+            buildHistoryParams(pageJobIds),
+          );
+        } catch (err) {
+          throw classifyHistoryError(err);
+        }
+
+        const result = normalizeHistoryResponse(response, pageNum);
+        const jobList = result.jobList;
 
         if (jobList.length === 0) {
-          throw new InvalidParamsError('暂无浏览历史');
+          if (!isJsonMode()) {
+            printInfo(chalk.yellow('暂无浏览历史'));
+          }
+          return result;
         }
 
         if (!isJsonMode()) {
@@ -450,7 +539,7 @@ export function registerSearchCommands(program: Command, client: ApiClient): voi
           printInfo(chalk.gray(`共 ${jobList.length} 条记录`));
         }
 
-        return response;
+        return result;
       }, { json: options.json === true });
     });
 

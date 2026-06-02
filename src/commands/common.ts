@@ -22,6 +22,14 @@ export function isVerbose(): boolean {
   return globalVerbose;
 }
 
+export function formatDiagnosticMessage(message: string, nextActions: string[] = []): string {
+  const sanitized = message.replace(/(Cookie|cookie|token|zp_token)=?[^,\s;]*/g, '$1=<hidden>');
+  if (nextActions.length === 0) {
+    return sanitized;
+  }
+  return `${sanitized}。可尝试：${nextActions.join(' / ')}`;
+}
+
 // 通用命令处理包装函数
 export async function handleCommand<T>(
   action: () => Promise<T>,

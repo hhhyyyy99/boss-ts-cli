@@ -54,3 +54,13 @@ export class AuthFlowError extends BossApiError {
     this.nextActions = nextActions;
   }
 }
+
+export class HistoryRequestError extends BossApiError {
+  public readonly nextActions: string[];
+
+  constructor(code: string, message: string, nextActions: string[] = []) {
+    super(code, message);
+    this.name = 'HistoryRequestError';
+    this.nextActions = nextActions;
+  }
+}
