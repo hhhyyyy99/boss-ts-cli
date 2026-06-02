@@ -8,6 +8,17 @@
 
 **Input**: User description: "https://github.com/jackwener/boss-cli 根据对标项目看看所有的命令还原度"
 
+## Clarifications
+
+### Session 2026-06-01
+
+- Q: What deliverable format should the parity audit produce? → A: Markdown audit report plus machine-readable JSON matrix.
+- Q: What validation depth should the parity audit require? → A: Static inventory, help output, and test evidence are primary; live behavior is sampled or explicitly flagged when account, role, or anti-bot limits apply.
+- Q: How should remediation gaps be prioritized? → A: Every gap uses P0/P1/P2/P3 priority.
+- Q: Should this feature automatically implement parity fixes after the audit? → A: No; the audit outputs gaps and priorities only, without automatic code changes.
+- Q: Where should the audit artifacts be stored? → A: Store them under the current feature directory as feature artifacts.
+- Q: When comprehensive detection finds missing parity items, how should they be handled? → A: Missing items must be added to the Markdown report, JSON matrix, and P0/P1/P2/P3 remediation list.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Understand Command Coverage (Priority: P1)
@@ -62,6 +73,7 @@ As a developer, I want the audit to become a stable baseline for future planning
 - The reference project has commands or aliases documented in README that differ from actual help output.
 - The local CLI has commands beyond the reference project, such as different login variants or renamed browser options.
 - Some commands are present in help but depend on authentication or BOSS account role, making live behavior difficult to validate for every user.
+- Commands that require live authentication, recruiter privileges, or anti-bot-sensitive request context may be marked as needing live verification when static and mocked evidence are sufficient to assess the command surface but not end-to-end behavior.
 - The reference project changes after the audit is created; the report must state the source revision or retrieval date used as the comparison baseline.
 - Output mode differences, especially JSON/YAML behavior and stdout/stderr separation, may affect agent usage even when the visible command name exists.
 
@@ -81,6 +93,12 @@ As a developer, I want the audit to become a stable baseline for future planning
 - **FR-010**: The audit MUST include a prioritized remediation list with severity, affected users, expected benefit, and recommended next phase for each gap.
 - **FR-011**: The audit MUST document local extensions that are not present in the reference project, so maintainers can decide whether to keep them as intentional improvements.
 - **FR-012**: The audit MUST state the comparison baseline, including the reference repository URL, the retrieval date, and the local feature branch or working state used for comparison.
+- **FR-013**: The audit MUST produce both a human-readable Markdown report and a machine-readable JSON matrix that represent the same command parity findings.
+- **FR-014**: The audit MUST use static inventory, help output, and automated test evidence as primary validation inputs, and MUST separately flag findings that require live authenticated verification.
+- **FR-015**: Every remediation gap MUST be assigned exactly one priority: P0 for blockers that prevent core parity claims, P1 for high-impact workflow gaps, P2 for compatibility or completeness gaps, and P3 for polish or low-risk documentation gaps.
+- **FR-016**: The audit MUST NOT automatically modify command behavior or implement parity fixes; remediation work must be represented as recommended follow-up items.
+- **FR-017**: The audit report and JSON matrix MUST be stored under the active feature directory so downstream planning can consume them as feature artifacts.
+- **FR-018**: Comprehensive detection MUST supplement every discovered missing command, option, alias, output mode, or behavior into the Markdown report, JSON matrix, and prioritized remediation list before the audit is considered complete.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -88,7 +106,7 @@ As a developer, I want the audit to become a stable baseline for future planning
 - **Local Command**: A command, subcommand, alias, argument, option, or output mode exposed by this CLI.
 - **Parity Finding**: A comparison result for one command or behavior, including status, evidence, user impact, and recommended next action.
 - **Workflow Area**: A user-facing grouping such as authentication, job search, personal center, social interaction, recruiter management, export, or structured output.
-- **Remediation Priority**: The suggested order for closing gaps based on user impact and dependency relationships.
+- **Remediation Priority**: A P0/P1/P2/P3 classification used to order remediation by user impact and dependency relationships.
 
 ## Success Criteria *(mandatory)*
 
@@ -99,6 +117,12 @@ As a developer, I want the audit to become a stable baseline for future planning
 - **SC-003**: At least 95% of command options documented by the reference project are either matched locally or explicitly recorded as a gap or intentional difference.
 - **SC-004**: A maintainer can identify the top five remediation items from the report in under 5 minutes.
 - **SC-005**: The audit can be rerun later against the same baseline and produce comparable categories without reinterpreting the scope.
+- **SC-006**: The Markdown report and JSON matrix contain the same set of reference commands, local commands, parity statuses, and remediation priorities.
+- **SC-007**: 100% of findings that cannot be safely live-verified identify the missing verification condition, such as account role, authentication state, or anti-bot-sensitive context.
+- **SC-008**: 100% of non-full-parity findings have exactly one P0/P1/P2/P3 priority and no unprioritized remediation item remains.
+- **SC-009**: The completed audit contains no direct code-change requirement beyond producing the report and matrix artifacts.
+- **SC-010**: The completed feature directory contains both the Markdown audit report and JSON matrix, and both are discoverable without reading project-level documentation.
+- **SC-011**: No discovered missing parity item is left only in notes or terminal output; each one appears in both formal artifacts and the remediation list.
 
 ## Assumptions
 
@@ -108,3 +132,4 @@ As a developer, I want the audit to become a stable baseline for future planning
 - Behavioral validation may use mocked or help-based evidence when live BOSS account role, anti-bot checks, or authentication restrictions prevent safe live execution.
 - Local commands that intentionally exceed the reference project should be preserved unless the audit identifies a compatibility problem.
 - Command parity includes user-visible behavior and machine-readable output compatibility, not just command names.
+- Audit artifacts are scoped to this feature directory first; long-term documentation can be promoted separately after remediation decisions are made.

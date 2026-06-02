@@ -1,0 +1,1703 @@
+{
+  "schemaVersion": "1",
+  "feature": "004-boss-cli-parity",
+  "generatedAt": "2026-06-01T12:13:59Z",
+  "baseline": {
+    "repositoryUrl": "https://github.com/jackwener/boss-cli",
+    "commit": "dcd8331",
+    "retrievedAt": "2026-06-01",
+    "sources": ["reference-readme", "reference-source", "reference-tests"]
+  },
+  "local": {
+    "branch": "004-boss-cli-parity",
+    "sources": ["local-help", "local-source", "local-tests"],
+    "buildCommand": "existing dist inspected; npm run typecheck and npm run test executed during validation",
+    "distFreshness": "dist/index.js existed before audit capture; source and dist help were both used as evidence",
+    "worktreeState": "dirty: pre-existing spec artifacts and AGENTS.md changes were present before parity artifact generation"
+  },
+  "evidenceSources": [
+    {
+      "id": "reference-readme",
+      "type": "readme",
+      "location": "/tmp/boss-cli-reference/README.md",
+      "capturedAt": "2026-06-01T12:13:59Z",
+      "summary": "Reference usage examples, structured output description, auth behavior, and recruiter command list from commit dcd8331."
+    },
+    {
+      "id": "reference-source",
+      "type": "source",
+      "location": "/tmp/boss-cli-reference/boss_cli/cli.py and /tmp/boss-cli-reference/boss_cli/commands/*.py",
+      "capturedAt": "2026-06-01T12:13:59Z",
+      "summary": "Click command decorators, options, arguments, and behavior hints from the reference implementation."
+    },
+    {
+      "id": "reference-tests",
+      "type": "test",
+      "location": "/tmp/boss-cli-reference/tests/*.py",
+      "capturedAt": "2026-06-01T12:13:59Z",
+      "summary": "Reference tests were available as supporting evidence, but command inventory was derived primarily from README and source because Python runtime dependencies were not installed."
+    },
+    {
+      "id": "local-help",
+      "type": "help_output",
+      "location": "node dist/index.js --help; node dist/index.js <command> --help; node dist/index.js recruiter <command> --help",
+      "capturedAt": "2026-06-01T12:13:59Z",
+      "summary": "Commander help output for top-level and recruiter command surfaces."
+    },
+    {
+      "id": "local-source",
+      "type": "source",
+      "location": "src/index.ts and src/commands/*.ts",
+      "capturedAt": "2026-06-01T12:13:59Z",
+      "summary": "Local TypeScript command registration, option declarations, JSON envelope handling, and known behavior implementation."
+    },
+    {
+      "id": "local-tests",
+      "type": "test",
+      "location": "tests/unit/*.test.ts and tests/integration/smoke.test.ts",
+      "capturedAt": "2026-06-01T12:13:59Z",
+      "summary": "Existing local unit and smoke tests, including auth and history parameter coverage."
+    }
+  ],
+  "inventories": {
+    "reference": [
+      {
+        "path": "login",
+        "aliases": [],
+        "description": "Auto-detect browser cookies with QR fallback; explicit browser source supported.",
+        "arguments": [],
+        "options": [
+          { "long": "--qrcode", "short": null, "requiresValue": false, "defaultValue": false, "description": "use QR login", "choices": null },
+          { "long": "--cookie-source", "short": null, "requiresValue": true, "defaultValue": null, "description": "select browser cookie source", "choices": null }
+        ],
+        "workflowArea": "auth",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "logout",
+        "aliases": [],
+        "description": "Clear saved credentials.",
+        "arguments": [],
+        "options": [],
+        "workflowArea": "auth",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": false
+      },
+      {
+        "path": "status",
+        "aliases": [],
+        "description": "Show credential state and per-flow search/recommend health.",
+        "arguments": [],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "auth",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "me",
+        "aliases": [],
+        "description": "View personal profile and job expectation.",
+        "arguments": [],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "auth",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "search",
+        "aliases": [],
+        "description": "Search jobs by keyword and filters.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": "全国", "description": "city name or code", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": 1, "description": "page number", "choices": null },
+          { "long": "--salary", "short": null, "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": null, "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": null, "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--industry", "short": null, "requiresValue": true, "defaultValue": null, "description": "industry filter", "choices": null },
+          { "long": "--scale", "short": null, "requiresValue": true, "defaultValue": null, "description": "company scale filter", "choices": null },
+          { "long": "--stage", "short": null, "requiresValue": true, "defaultValue": null, "description": "funding stage filter", "choices": null },
+          { "long": "--job-type", "short": null, "requiresValue": true, "defaultValue": null, "description": "job type filter", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recommend",
+        "aliases": [],
+        "description": "View recommended jobs.",
+        "arguments": [],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": 1, "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "detail",
+        "aliases": [],
+        "description": "View full job detail by securityId.",
+        "arguments": [{ "name": "security_id", "required": true, "valueHint": "securityId" }],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "show",
+        "aliases": [],
+        "description": "View job detail by cached result index.",
+        "arguments": [{ "name": "index", "required": true, "valueHint": "cached result index" }],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "export",
+        "aliases": [],
+        "description": "Export search results to CSV or JSON.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": "全国", "description": "city name or code", "choices": null },
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": 30, "description": "export count", "choices": null },
+          { "long": "--salary", "short": null, "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": null, "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": null, "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--industry", "short": null, "requiresValue": true, "defaultValue": null, "description": "industry filter", "choices": null },
+          { "long": "--scale", "short": null, "requiresValue": true, "defaultValue": null, "description": "company scale filter", "choices": null },
+          { "long": "--stage", "short": null, "requiresValue": true, "defaultValue": null, "description": "funding stage filter", "choices": null },
+          { "long": "--job-type", "short": null, "requiresValue": true, "defaultValue": null, "description": "job type filter", "choices": null },
+          { "long": "--output", "short": "-o", "requiresValue": true, "defaultValue": null, "description": "output file path", "choices": null },
+          { "long": "--format", "short": null, "requiresValue": true, "defaultValue": "csv", "description": "output format", "choices": ["csv", "json"] }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "history",
+        "aliases": [],
+        "description": "View browsing history.",
+        "arguments": [],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": 1, "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "applied",
+        "aliases": [],
+        "description": "View applied jobs.",
+        "arguments": [],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": 1, "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "interviews",
+        "aliases": [],
+        "description": "View interview invitations.",
+        "arguments": [],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "chat",
+        "aliases": [],
+        "description": "View communicated boss list.",
+        "arguments": [],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "greet",
+        "aliases": [],
+        "description": "Send greeting to recruiter.",
+        "arguments": [{ "name": "security_id", "required": true, "valueHint": "securityId" }],
+        "options": [
+          { "long": "--lid", "short": null, "requiresValue": true, "defaultValue": "", "description": "lid from search results", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "social",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "batch-greet",
+        "aliases": [],
+        "description": "Batch greet top search results.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": "全国", "description": "city name or code", "choices": null },
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": 5, "description": "greet count", "choices": null },
+          { "long": "--salary", "short": null, "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": null, "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": null, "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--dry-run", "short": null, "requiresValue": false, "defaultValue": false, "description": "preview only", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null }
+        ],
+        "workflowArea": "social",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "cities",
+        "aliases": [],
+        "description": "List supported cities.",
+        "arguments": [],
+        "options": [],
+        "workflowArea": "utility",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": false
+      },
+      {
+        "path": "recruiter",
+        "aliases": [],
+        "description": "Recruiter command group.",
+        "arguments": [],
+        "options": [],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter search",
+        "aliases": [],
+        "description": "Search candidates.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "candidate search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": "上海", "description": "city name or code", "choices": null },
+          { "long": "--exp", "short": null, "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": null, "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--salary", "short": null, "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "associated encryptJobId", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": 1, "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter recommend",
+        "aliases": [],
+        "description": "View recommended candidates.",
+        "arguments": [],
+        "options": [
+          { "long": "--limit", "short": "-n", "requiresValue": true, "defaultValue": 0, "description": "display limit", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": 1, "description": "page number", "choices": null },
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "associated encryptJobId", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter greet",
+        "aliases": [],
+        "description": "Initiate conversation with a candidate.",
+        "arguments": [{ "name": "encrypt_geek_id", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "associated encryptJobId", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter batch-view",
+        "aliases": [],
+        "description": "Batch view candidates from search results.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "candidate search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": "上海", "description": "city name or code", "choices": null },
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": 5, "description": "view count", "choices": null },
+          { "long": "--salary", "short": null, "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": null, "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": null, "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "associated encryptJobId", "choices": null },
+          { "long": "--dry-run", "short": null, "requiresValue": false, "defaultValue": false, "description": "preview only", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter inbox",
+        "aliases": [],
+        "description": "View candidate messages.",
+        "arguments": [],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "filter by job", "choices": null },
+          { "long": "--label", "short": null, "requiresValue": true, "defaultValue": 0, "description": "filter by label", "choices": null },
+          { "long": "--limit", "short": "-n", "requiresValue": true, "defaultValue": 0, "description": "display limit", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter reply",
+        "aliases": [],
+        "description": "Reply to candidate.",
+        "arguments": [
+          { "name": "friend_id", "required": true, "valueHint": "friendId" },
+          { "name": "message", "required": true, "valueHint": "message text" }
+        ],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter chat",
+        "aliases": [],
+        "description": "View chat history.",
+        "arguments": [{ "name": "friend_id", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": 20, "description": "message count", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter request-resume",
+        "aliases": [],
+        "description": "Request candidate resume.",
+        "arguments": [{ "name": "friend_id", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter exchange-phone",
+        "aliases": [],
+        "description": "Request phone exchange.",
+        "arguments": [{ "name": "friend_id", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter exchange-wechat",
+        "aliases": [],
+        "description": "Request WeChat exchange.",
+        "arguments": [{ "name": "friend_id", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter invite-interview",
+        "aliases": [],
+        "description": "Invite candidate for interview.",
+        "arguments": [{ "name": "encrypt_geek_id", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "required associated encryptJobId", "choices": null },
+          { "long": "--address", "short": null, "requiresValue": true, "defaultValue": "", "description": "interview address", "choices": null },
+          { "long": "--time", "short": null, "requiresValue": true, "defaultValue": "", "description": "interview start time", "choices": null },
+          { "long": "--desc", "short": null, "requiresValue": true, "defaultValue": "", "description": "interview description", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter mark-unsuitable",
+        "aliases": [],
+        "description": "Mark candidate as unsuitable.",
+        "arguments": [{ "name": "encrypt_geek_id", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "required associated encryptJobId", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter resume",
+        "aliases": [],
+        "description": "View full candidate resume.",
+        "arguments": [{ "name": "encrypt_geek_id", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "associated encryptJobId", "choices": null },
+          { "long": "--security-id", "short": null, "requiresValue": true, "defaultValue": "", "description": "candidate securityId", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter geek",
+        "aliases": [],
+        "description": "Legacy quick candidate info command.",
+        "arguments": [{ "name": "encrypt_geek_id", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--security-id", "short": null, "requiresValue": true, "defaultValue": "", "description": "candidate securityId", "choices": null },
+          { "long": "--job-id", "short": null, "requiresValue": true, "defaultValue": 0, "description": "associated numeric job id", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter resume-download",
+        "aliases": [],
+        "description": "Download candidate resume as Markdown.",
+        "arguments": [{ "name": "encrypt_geek_id", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "associated encryptJobId", "choices": null },
+          { "long": "--security-id", "short": null, "requiresValue": true, "defaultValue": "", "description": "candidate securityId", "choices": null },
+          { "long": "--output", "short": "-o", "requiresValue": true, "defaultValue": null, "description": "output file path", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter jobs",
+        "aliases": [],
+        "description": "List posted jobs.",
+        "arguments": [],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter job-close",
+        "aliases": [],
+        "description": "Take job offline.",
+        "arguments": [{ "name": "encrypt_job_id", "required": true, "valueHint": "job id" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter job-reopen",
+        "aliases": [],
+        "description": "Bring job online.",
+        "arguments": [{ "name": "encrypt_job_id", "required": true, "valueHint": "job id" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter labels",
+        "aliases": [],
+        "description": "List candidate labels.",
+        "arguments": [],
+        "options": [
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON structured output", "choices": null },
+          { "long": "--yaml", "short": null, "requiresValue": false, "defaultValue": false, "description": "YAML structured output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter export",
+        "aliases": [],
+        "description": "Export candidate data.",
+        "arguments": [],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": "", "description": "filter by job", "choices": null },
+          { "long": "--output", "short": "-o", "requiresValue": true, "defaultValue": null, "description": "output file path", "choices": null },
+          { "long": "--format", "short": null, "requiresValue": true, "defaultValue": "csv", "description": "output format", "choices": ["csv", "json"] }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      }
+    ],
+    "local": [
+      {
+        "path": "login",
+        "aliases": [],
+        "description": "Default browser-cookie login, QR login, web login, explicit browser/profile options.",
+        "arguments": [],
+        "options": [
+          { "long": "--qrcode", "short": null, "requiresValue": false, "defaultValue": false, "description": "use QR login", "choices": null },
+          { "long": "--web", "short": null, "requiresValue": false, "defaultValue": false, "description": "open browser login page and recover cookies", "choices": null },
+          { "long": "--browser", "short": null, "requiresValue": true, "defaultValue": null, "description": "select browser", "choices": ["chrome", "edge", "brave", "firefox"] },
+          { "long": "--cookie-path", "short": null, "requiresValue": true, "defaultValue": null, "description": "explicit Chromium cookie database path", "choices": null },
+          { "long": "--profile", "short": null, "requiresValue": true, "defaultValue": null, "description": "browser profile name", "choices": null }
+        ],
+        "workflowArea": "auth",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "logout",
+        "aliases": [],
+        "description": "Clear saved credentials.",
+        "arguments": [],
+        "options": [],
+        "workflowArea": "auth",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": false
+      },
+      {
+        "path": "status",
+        "aliases": [],
+        "description": "Check login status and API health.",
+        "arguments": [],
+        "options": [{ "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output via global or command handling", "choices": null }],
+        "workflowArea": "auth",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "me",
+        "aliases": [],
+        "description": "View personal information.",
+        "arguments": [],
+        "options": [{ "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output via global or command handling", "choices": null }],
+        "workflowArea": "auth",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "search",
+        "aliases": [],
+        "description": "Search jobs.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": null, "description": "city name or code", "choices": null },
+          { "long": "--salary", "short": "-s", "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": "-e", "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": "-d", "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--industry", "short": null, "requiresValue": true, "defaultValue": null, "description": "industry filter", "choices": null },
+          { "long": "--scale", "short": null, "requiresValue": true, "defaultValue": null, "description": "scale filter", "choices": null },
+          { "long": "--stage", "short": null, "requiresValue": true, "defaultValue": null, "description": "stage filter", "choices": null },
+          { "long": "--job-type", "short": null, "requiresValue": true, "defaultValue": null, "description": "job type filter", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recommend",
+        "aliases": [],
+        "description": "View recommended jobs.",
+        "arguments": [],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "detail",
+        "aliases": [],
+        "description": "View job detail by securityId.",
+        "arguments": [{ "name": "securityId", "required": true, "valueHint": "securityId" }],
+        "options": [{ "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "show",
+        "aliases": [],
+        "description": "View job detail by cached index.",
+        "arguments": [{ "name": "index", "required": true, "valueHint": "cached index" }],
+        "options": [{ "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "export",
+        "aliases": [],
+        "description": "Export search results.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "search keyword" }],
+        "options": [
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": "20", "description": "export count", "choices": null },
+          { "long": "--output", "short": "-o", "requiresValue": true, "defaultValue": null, "description": "output file path", "choices": null },
+          { "long": "--format", "short": null, "requiresValue": true, "defaultValue": "csv", "description": "output format", "choices": ["csv", "json"] },
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": null, "description": "city filter", "choices": null },
+          { "long": "--salary", "short": "-s", "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": "-e", "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": "-d", "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--industry", "short": null, "requiresValue": true, "defaultValue": null, "description": "industry filter", "choices": null },
+          { "long": "--scale", "short": null, "requiresValue": true, "defaultValue": null, "description": "scale filter", "choices": null },
+          { "long": "--stage", "short": null, "requiresValue": true, "defaultValue": null, "description": "stage filter", "choices": null },
+          { "long": "--job-type", "short": null, "requiresValue": true, "defaultValue": null, "description": "job type filter", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON command result output", "choices": null }
+        ],
+        "workflowArea": "job_search",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "history",
+        "aliases": [],
+        "description": "View browsing history.",
+        "arguments": [],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "applied",
+        "aliases": [],
+        "description": "View applied jobs.",
+        "arguments": [],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "interviews",
+        "aliases": [],
+        "description": "View interview invitations.",
+        "arguments": [],
+        "options": [{ "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "chat",
+        "aliases": [],
+        "description": "View communicated recruiters.",
+        "arguments": [],
+        "options": [{ "long": "--json", "short": null, "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "personal_center",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "greet",
+        "aliases": [],
+        "description": "Send greeting to recruiter.",
+        "arguments": [{ "name": "securityId", "required": true, "valueHint": "securityId" }],
+        "options": [],
+        "workflowArea": "social",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "batch-greet",
+        "aliases": [],
+        "description": "Batch greet search results.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "search keyword" }],
+        "options": [
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": "5", "description": "greet count", "choices": null },
+          { "long": "--city", "short": null, "requiresValue": true, "defaultValue": null, "description": "city filter", "choices": null },
+          { "long": "--salary", "short": null, "requiresValue": true, "defaultValue": null, "description": "salary filter", "choices": null },
+          { "long": "--exp", "short": null, "requiresValue": true, "defaultValue": null, "description": "experience filter", "choices": null },
+          { "long": "--degree", "short": null, "requiresValue": true, "defaultValue": null, "description": "degree filter", "choices": null },
+          { "long": "--industry", "short": null, "requiresValue": true, "defaultValue": null, "description": "industry filter", "choices": null },
+          { "long": "--scale", "short": null, "requiresValue": true, "defaultValue": null, "description": "scale filter", "choices": null },
+          { "long": "--stage", "short": null, "requiresValue": true, "defaultValue": null, "description": "stage filter", "choices": null },
+          { "long": "--job-type", "short": null, "requiresValue": true, "defaultValue": null, "description": "job type filter", "choices": null },
+          { "long": "--dry-run", "short": null, "requiresValue": false, "defaultValue": false, "description": "preview only", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null }
+        ],
+        "workflowArea": "social",
+        "requiresAuth": true,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "cities",
+        "aliases": [],
+        "description": "List supported cities.",
+        "arguments": [],
+        "options": [],
+        "workflowArea": "utility",
+        "requiresAuth": false,
+        "requiresRecruiterRole": false,
+        "liveVerificationSensitive": false
+      },
+      {
+        "path": "recruiter",
+        "aliases": ["hr"],
+        "description": "Recruiter command group.",
+        "arguments": [],
+        "options": [],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter search",
+        "aliases": [],
+        "description": "Search candidates.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "candidate search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": null, "description": "city", "choices": null },
+          { "long": "--exp", "short": "-e", "requiresValue": true, "defaultValue": null, "description": "experience", "choices": null },
+          { "long": "--degree", "short": "-d", "requiresValue": true, "defaultValue": null, "description": "degree", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter recommend",
+        "aliases": [],
+        "description": "Recommended candidates.",
+        "arguments": [],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "filter by job", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter greet",
+        "aliases": [],
+        "description": "Greet candidate.",
+        "arguments": [{ "name": "encryptGeekId", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--message", "short": null, "requiresValue": true, "defaultValue": null, "description": "custom greeting message", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter batch-view",
+        "aliases": [],
+        "description": "Batch view candidates.",
+        "arguments": [{ "name": "keyword", "required": true, "valueHint": "candidate search keyword" }],
+        "options": [
+          { "long": "--city", "short": "-c", "requiresValue": true, "defaultValue": null, "description": "city", "choices": null },
+          { "long": "--count", "short": "-n", "requiresValue": true, "defaultValue": "10", "description": "view count", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter inbox",
+        "aliases": [],
+        "description": "Candidate messages.",
+        "arguments": [],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "filter by job", "choices": null },
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter reply",
+        "aliases": [],
+        "description": "Reply to candidate.",
+        "arguments": [
+          { "name": "friendId", "required": true, "valueHint": "friendId" },
+          { "name": "message", "required": true, "valueHint": "message text" }
+        ],
+        "options": [{ "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter chat",
+        "aliases": [],
+        "description": "Chat history with candidate.",
+        "arguments": [{ "name": "friendId", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--page", "short": "-p", "requiresValue": true, "defaultValue": "1", "description": "page number", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter request-resume",
+        "aliases": [],
+        "description": "Request resume.",
+        "arguments": [{ "name": "friendId", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter exchange-phone",
+        "aliases": [],
+        "description": "Request phone exchange.",
+        "arguments": [{ "name": "friendId", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter exchange-wechat",
+        "aliases": [],
+        "description": "Request WeChat exchange.",
+        "arguments": [{ "name": "friendId", "required": true, "valueHint": "friendId" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter invite-interview",
+        "aliases": [],
+        "description": "Invite candidate for interview.",
+        "arguments": [{ "name": "geekId", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "required job id", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter mark-unsuitable",
+        "aliases": [],
+        "description": "Mark candidate unsuitable.",
+        "arguments": [{ "name": "geekId", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "required job id", "choices": null },
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter resume",
+        "aliases": [],
+        "description": "Show full candidate resume.",
+        "arguments": [{ "name": "encryptGeekId", "required": true, "valueHint": "candidate id" }],
+        "options": [{ "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter resume-download",
+        "aliases": [],
+        "description": "Download candidate resume as Markdown.",
+        "arguments": [{ "name": "encryptGeekId", "required": true, "valueHint": "candidate id" }],
+        "options": [
+          { "long": "--job", "short": null, "requiresValue": true, "defaultValue": null, "description": "required job id", "choices": null },
+          { "long": "--output", "short": "-o", "requiresValue": true, "defaultValue": null, "description": "output path", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter jobs",
+        "aliases": [],
+        "description": "List posted jobs.",
+        "arguments": [],
+        "options": [{ "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter job-close",
+        "aliases": [],
+        "description": "Close job.",
+        "arguments": [{ "name": "encryptJobId", "required": true, "valueHint": "job id" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter job-reopen",
+        "aliases": [],
+        "description": "Reopen job.",
+        "arguments": [{ "name": "encryptJobId", "required": true, "valueHint": "job id" }],
+        "options": [
+          { "long": "--yes", "short": "-y", "requiresValue": false, "defaultValue": false, "description": "skip confirmation", "choices": null },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter labels",
+        "aliases": [],
+        "description": "List candidate labels.",
+        "arguments": [],
+        "options": [{ "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON output", "choices": null }],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      },
+      {
+        "path": "recruiter export",
+        "aliases": [],
+        "description": "Export candidate data.",
+        "arguments": [],
+        "options": [
+          { "long": "--output", "short": "-o", "requiresValue": true, "defaultValue": "candidates_export", "description": "output path", "choices": null },
+          { "long": "--format", "short": "-f", "requiresValue": true, "defaultValue": "csv", "description": "export format", "choices": ["csv", "json"] },
+          { "long": "--json", "short": "-j", "requiresValue": false, "defaultValue": false, "description": "JSON command result output", "choices": null }
+        ],
+        "workflowArea": "recruiter",
+        "requiresAuth": true,
+        "requiresRecruiterRole": true,
+        "liveVerificationSensitive": true
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "top-level-command-surface-full",
+      "referencePath": "*",
+      "localPath": "*",
+      "workflowArea": "utility",
+      "subject": "command",
+      "status": "Full",
+      "priority": null,
+      "gap": null,
+      "severity": null,
+      "affectedUsers": [],
+      "impact": "All reference top-level commands are registered locally.",
+      "expectedBenefit": null,
+      "recommendedAction": null,
+      "suggestedNextPhase": null,
+      "verificationSources": ["reference-readme", "reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "recruiter-command-surface-partial",
+      "referencePath": "recruiter *",
+      "localPath": "recruiter *",
+      "workflowArea": "recruiter",
+      "subject": "command",
+      "status": "Partial",
+      "priority": "P1",
+      "gap": "Local recruiter group implements 19 documented subcommands but lacks the reference legacy command `recruiter geek`.",
+      "severity": "high",
+      "affectedUsers": ["recruiters following reference README or existing automation that calls recruiter geek"],
+      "impact": "Reference-compatible recruiter scripts fail for the legacy quick candidate info command.",
+      "expectedBenefit": "Restores command-surface parity for recruiter mode and avoids breaking reference-compatible automation.",
+      "recommendedAction": "Add `boss recruiter geek <encryptGeekId>` as a compatibility command or explicitly document it as an intentional difference in a follow-up implementation feature.",
+      "suggestedNextPhase": "follow-up implementation feature",
+      "verificationSources": ["reference-readme", "reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "recruiter-geek-command-missing",
+      "referencePath": "recruiter geek",
+      "localPath": null,
+      "workflowArea": "recruiter",
+      "subject": "command",
+      "status": "Missing",
+      "priority": "P1",
+      "gap": "Reference exposes `boss recruiter geek <encryptGeekId> --security-id --job-id`; local CLI has no equivalent command or alias.",
+      "severity": "high",
+      "affectedUsers": ["recruiters using quick candidate info", "agents or scripts migrated from jackwener/boss-cli"],
+      "impact": "Users cannot run the reference quick candidate info workflow locally.",
+      "expectedBenefit": "Completes recruiter command inventory and provides a direct migration path for reference users.",
+      "recommendedAction": "Implement a compatibility command backed by the local resume/candidate-detail flow, preserving `--security-id` and `--job-id` options where possible.",
+      "suggestedNextPhase": "follow-up implementation feature",
+      "verificationSources": ["reference-readme", "reference-source", "local-help"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "structured-output-yaml-missing",
+      "referencePath": "--yaml",
+      "localPath": null,
+      "workflowArea": "structured_output",
+      "subject": "output_mode",
+      "status": "Missing",
+      "priority": "P1",
+      "gap": "Reference supports `--yaml` structured output on commands decorated with structured_output_options and auto-YAML for non-TTY stdout; local CLI supports JSON envelopes only.",
+      "severity": "high",
+      "affectedUsers": ["AI agents expecting YAML output", "users piping non-TTY output from the reference CLI"],
+      "impact": "Machine-readable compatibility is incomplete even when command names match.",
+      "expectedBenefit": "Restores agent-friendly output mode parity and enables downstream tools to consume either JSON or YAML like the reference.",
+      "recommendedAction": "Add YAML output support, decide whether to match non-TTY auto-YAML, and update help/tests for structured output behavior.",
+      "suggestedNextPhase": "follow-up implementation feature",
+      "verificationSources": ["reference-readme", "reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "login-cookie-source-option-renamed",
+      "referencePath": "login --cookie-source",
+      "localPath": "login --browser",
+      "workflowArea": "auth",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference uses `--cookie-source`; local CLI uses `--browser` plus local-only `--cookie-path` and `--profile`.",
+      "severity": "medium",
+      "affectedUsers": ["users copying reference authentication commands", "migration scripts using --cookie-source"],
+      "impact": "The same authentication workflow exists but the reference flag fails locally.",
+      "expectedBenefit": "Improves auth migration compatibility while preserving richer local browser selection options.",
+      "recommendedAction": "Add `--cookie-source` as an alias for `--browser` or document the rename as an intentional compatibility deviation.",
+      "suggestedNextPhase": "follow-up implementation feature",
+      "verificationSources": ["reference-readme", "reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "login-default-fallback-behavior-different",
+      "referencePath": "login",
+      "localPath": "login",
+      "workflowArea": "auth",
+      "subject": "behavior",
+      "status": "Partial",
+      "priority": "P1",
+      "gap": "Reference `boss login` auto-extracts browser cookies and falls back to QR login. Local default login reports failure when browser-cookie extraction does not produce a verifiable session and instructs the user to run `--qrcode` or `--web` separately.",
+      "severity": "high",
+      "affectedUsers": ["first-time users", "users on systems where browser cookie extraction is unavailable"],
+      "impact": "Default login parity is incomplete and can block initial authentication.",
+      "expectedBenefit": "A reference-compatible default login flow would reduce manual retries and match documented behavior.",
+      "recommendedAction": "Plan a follow-up auth feature to either implement QR fallback in default login or explicitly classify the behavior as intentional.",
+      "suggestedNextPhase": "auth parity implementation feature",
+      "verificationSources": ["reference-readme", "reference-source", "local-source", "local-help"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs a testable browser/QR environment and a BOSS account to verify full end-to-end fallback behavior."
+    },
+    {
+      "id": "login-web-local-extension-blocked",
+      "referencePath": null,
+      "localPath": "login --web",
+      "workflowArea": "auth",
+      "subject": "behavior",
+      "status": "Blocked",
+      "priority": "P1",
+      "gap": "Local `--web` is a local extension not present in the reference. User reports it opens or instructs browser login but does not complete cookie recovery when the browser is already logged in.",
+      "severity": "high",
+      "affectedUsers": ["local users relying on browser-page login recovery"],
+      "impact": "The local extension cannot be claimed as a reliable auth alternative until cookie recovery completion is verified.",
+      "expectedBenefit": "Clarifies that `--web` should be fixed as a local improvement separate from reference parity.",
+      "recommendedAction": "Keep as local extension but create a dedicated auth fix to detect existing browser sessions, recover cookies, and time out with actionable diagnostics.",
+      "suggestedNextPhase": "auth reliability implementation feature",
+      "verificationSources": ["local-help", "local-source", "manual user report"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs the user's real browser session or a controlled browser profile with BOSS login cookies."
+    },
+    {
+      "id": "history-live-params-blocked",
+      "referencePath": "history",
+      "localPath": "history",
+      "workflowArea": "personal_center",
+      "subject": "behavior",
+      "status": "Blocked",
+      "priority": "P0",
+      "gap": "User reports local `node dist/index.js history -p=1` returns BOSS API error `缺少必要参数 (code=17)` even though the command surface exists.",
+      "severity": "critical",
+      "affectedUsers": ["job seekers using browsing history", "maintainers claiming job seeker workflow parity"],
+      "impact": "A core personal-center command appears registered but fails live behavior due to missing required request context or parameter mapping.",
+      "expectedBenefit": "Fixing this would unblock a visible workflow and provide concrete evidence for behavior parity.",
+      "recommendedAction": "Plan a follow-up behavior fix to compare reference `get_job_history(page=page)` request context with local `JOB_HISTORY_API` parameters and headers.",
+      "suggestedNextPhase": "behavior parity implementation feature",
+      "verificationSources": ["local-source", "manual user report", "reference-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Requires an authenticated BOSS account with browsing history; no cookies or private history values should be stored in audit artifacts."
+    },
+    {
+      "id": "recruiter-search-options-partial",
+      "referencePath": "recruiter search",
+      "localPath": "recruiter search",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference recruiter search supports `--salary` and `--job`; local recruiter search exposes city, exp, degree, and page but not salary/job.",
+      "severity": "medium",
+      "affectedUsers": ["recruiters filtering candidates by salary or associated job"],
+      "impact": "Candidate search option parity is incomplete.",
+      "expectedBenefit": "Improves recruiter search precision and option-level parity.",
+      "recommendedAction": "Add `--salary` and `--job` options to local recruiter search with request parameter mapping.",
+      "suggestedNextPhase": "recruiter option parity implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account access to verify BOSS accepts the mapped salary and job parameters."
+    },
+    {
+      "id": "recruiter-recommend-limit-option-missing",
+      "referencePath": "recruiter recommend --limit",
+      "localPath": null,
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Missing",
+      "priority": "P3",
+      "gap": "Reference recruiter recommend supports `-n/--limit`; local recruiter recommend does not.",
+      "severity": "low",
+      "affectedUsers": ["recruiters limiting displayed recommendations"],
+      "impact": "Display control differs, but core recommendation retrieval is present.",
+      "expectedBenefit": "Completes low-risk display option parity.",
+      "recommendedAction": "Add `-n/--limit` as a display-only option.",
+      "suggestedNextPhase": "recruiter polish implementation feature",
+      "verificationSources": ["reference-source", "local-help"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "recruiter-greet-job-option-missing",
+      "referencePath": "recruiter greet --job",
+      "localPath": "recruiter greet --message",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference recruiter greet supports `--job` to associate an encryptJobId. Local recruiter greet exposes a local-only `--message` option but no `--job`.",
+      "severity": "medium",
+      "affectedUsers": ["recruiters greeting candidates for a specific job"],
+      "impact": "The local greet workflow may lack the reference request context needed for job-specific candidate interactions.",
+      "expectedBenefit": "Better recruiter workflow parity and clearer request context.",
+      "recommendedAction": "Add `--job` and verify whether `--message` should remain a local extension.",
+      "suggestedNextPhase": "recruiter behavior parity implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account and candidate id to validate the job-associated greet request."
+    },
+    {
+      "id": "recruiter-batch-view-options-partial",
+      "referencePath": "recruiter batch-view",
+      "localPath": "recruiter batch-view",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference batch-view supports salary, exp, degree, job, dry-run, and yes options; local only supports city, count, and json.",
+      "severity": "medium",
+      "affectedUsers": ["recruiters previewing or safely limiting batch candidate views"],
+      "impact": "Safety confirmation and filter parity are incomplete for an action that can notify candidates.",
+      "expectedBenefit": "Restores safer and more precise batch-view behavior.",
+      "recommendedAction": "Add missing filters and safety options, especially `--dry-run` and `--yes`.",
+      "suggestedNextPhase": "recruiter safety parity implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account to verify candidate-view side effects without exposing private candidate data."
+    },
+    {
+      "id": "recruiter-inbox-options-partial",
+      "referencePath": "recruiter inbox",
+      "localPath": "recruiter inbox",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P3",
+      "gap": "Reference inbox supports `--label` and `-n/--limit`; local supports job and page but not label/limit.",
+      "severity": "low",
+      "affectedUsers": ["recruiters filtering inbox by label or limiting displayed rows"],
+      "impact": "Inbox retrieval exists, but display/filter compatibility is incomplete.",
+      "expectedBenefit": "Improves recruiter inbox usability and option completeness.",
+      "recommendedAction": "Add `--label` and `-n/--limit` or document the difference.",
+      "suggestedNextPhase": "recruiter polish implementation feature",
+      "verificationSources": ["reference-source", "local-help"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account with inbox labels to verify label filtering."
+    },
+    {
+      "id": "recruiter-reply-confirmation-missing",
+      "referencePath": "recruiter reply --yes",
+      "localPath": null,
+      "workflowArea": "recruiter",
+      "subject": "behavior",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference asks for confirmation before sending a candidate message unless `--yes` is supplied. Local recruiter reply sends without a confirmation option.",
+      "severity": "medium",
+      "affectedUsers": ["recruiters sending candidate messages", "operators using agent-driven commands"],
+      "impact": "Safety confirmation parity is missing for a side-effectful messaging action.",
+      "expectedBenefit": "Reduces accidental candidate messages and matches reference safety semantics.",
+      "recommendedAction": "Add `-y/--yes` and interactive confirmation in non-JSON mode; require explicit confirmation behavior in JSON/agent contexts.",
+      "suggestedNextPhase": "recruiter safety parity implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "recruiter-chat-count-option-different",
+      "referencePath": "recruiter chat --count",
+      "localPath": "recruiter chat --page",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P3",
+      "gap": "Reference recruiter chat uses `-n/--count`; local uses `-p/--page` with pageSize 20.",
+      "severity": "low",
+      "affectedUsers": ["recruiters expecting reference chat history pagination semantics"],
+      "impact": "Chat history can be read, but option semantics differ.",
+      "expectedBenefit": "Improves compatibility for scripts that request a specific message count.",
+      "recommendedAction": "Add `-n/--count` or document `--page` as an intentional local behavior.",
+      "suggestedNextPhase": "recruiter polish implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "recruiter-invite-interview-options-partial",
+      "referencePath": "recruiter invite-interview",
+      "localPath": "recruiter invite-interview",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference invite-interview supports `--address`, `--time`, and `--desc`; local only requires `--job` and `--yes`.",
+      "severity": "medium",
+      "affectedUsers": ["recruiters creating interview invitations from the CLI"],
+      "impact": "Local invitations may be less complete or incompatible with reference command usage.",
+      "expectedBenefit": "Restores full interview invite command parity.",
+      "recommendedAction": "Add address/time/description options and map them to the local interview invite request.",
+      "suggestedNextPhase": "recruiter workflow implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account and controlled candidate/job identifiers to verify interview side effects."
+    },
+    {
+      "id": "recruiter-resume-options-partial",
+      "referencePath": "recruiter resume",
+      "localPath": "recruiter resume",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P2",
+      "gap": "Reference resume supports `--job` and `--security-id`; local resume only accepts the candidate id and json flag.",
+      "severity": "medium",
+      "affectedUsers": ["recruiters viewing candidate resumes that require job/security context"],
+      "impact": "The local resume command may fail or return incomplete data for candidates requiring additional request context.",
+      "expectedBenefit": "Improves live recruiter resume compatibility.",
+      "recommendedAction": "Add optional `--job` and `--security-id` and mirror reference fallback lookup behavior.",
+      "suggestedNextPhase": "recruiter behavior parity implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account and candidate context to verify request parameters."
+    },
+    {
+      "id": "recruiter-resume-download-security-option-missing",
+      "referencePath": "recruiter resume-download --security-id",
+      "localPath": null,
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Missing",
+      "priority": "P3",
+      "gap": "Reference resume-download supports `--security-id`; local does not.",
+      "severity": "low",
+      "affectedUsers": ["recruiters downloading resumes for candidates requiring securityId context"],
+      "impact": "Download can work for simpler cases but lacks one reference context option.",
+      "expectedBenefit": "Completes resume-download option parity.",
+      "recommendedAction": "Add optional `--security-id` and pass it through to the candidate detail request.",
+      "suggestedNextPhase": "recruiter polish implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account and candidate context to verify request parameters."
+    },
+    {
+      "id": "recruiter-export-job-filter-missing",
+      "referencePath": "recruiter export --job",
+      "localPath": null,
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Missing",
+      "priority": "P3",
+      "gap": "Reference recruiter export supports filtering by `--job`; local recruiter export does not expose a job filter.",
+      "severity": "low",
+      "affectedUsers": ["recruiters exporting candidates for a specific job"],
+      "impact": "Export exists but cannot match reference job-scoped output.",
+      "expectedBenefit": "Improves export compatibility and reduces manual filtering.",
+      "recommendedAction": "Add `--job` to local recruiter export and pass it to the candidate source query.",
+      "suggestedNextPhase": "recruiter polish implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account with multiple jobs to verify filtering."
+    },
+    {
+      "id": "job-search-option-coverage-partial",
+      "referencePath": "search/export/batch-greet",
+      "localPath": "search/export/batch-greet",
+      "workflowArea": "job_search",
+      "subject": "option",
+      "status": "Partial",
+      "priority": "P3",
+      "gap": "Local job seeker search/export mostly cover reference filters, but defaults and choices are not enforced like the Click reference; batch-greet lacks `-c` short alias for city.",
+      "severity": "low",
+      "affectedUsers": ["users relying on strict choice validation or exact short aliases"],
+      "impact": "Core filtering works, but help and validation parity are not exact.",
+      "expectedBenefit": "Tightens compatibility and reduces invalid request parameters.",
+      "recommendedAction": "Add explicit choice validation or document commander free-form behavior; add `-c` alias to batch-greet city if desired.",
+      "suggestedNextPhase": "compatibility polish implementation feature",
+      "verificationSources": ["reference-source", "local-help", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "json-envelope-full",
+      "referencePath": "--json",
+      "localPath": "--json",
+      "workflowArea": "structured_output",
+      "subject": "output_mode",
+      "status": "Full",
+      "priority": null,
+      "gap": null,
+      "severity": null,
+      "affectedUsers": [],
+      "impact": "Local schema.ts emits `{ok, schema_version, data}` and `{ok:false, schema_version, data:null, error}` envelopes matching the reference contract shape.",
+      "expectedBenefit": null,
+      "recommendedAction": null,
+      "suggestedNextPhase": null,
+      "verificationSources": ["reference-readme", "local-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "stdout-stderr-separation-full",
+      "referencePath": "structured output progress separation",
+      "localPath": "structured output progress separation",
+      "workflowArea": "structured_output",
+      "subject": "behavior",
+      "status": "Full",
+      "priority": null,
+      "gap": null,
+      "severity": null,
+      "affectedUsers": [],
+      "impact": "Local human-readable progress is written to stderr and JSON envelopes are written to stdout in JSON mode, matching the reference agent-friendly separation.",
+      "expectedBenefit": null,
+      "recommendedAction": null,
+      "suggestedNextPhase": null,
+      "verificationSources": ["reference-readme", "local-source", "local-help"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "local-hr-alias-extension",
+      "referencePath": null,
+      "localPath": "hr",
+      "workflowArea": "recruiter",
+      "subject": "alias",
+      "status": "Intentionally Different",
+      "priority": "P3",
+      "gap": "Local CLI adds `hr` as an alias for `recruiter`; the reference does not document this alias.",
+      "severity": "low",
+      "affectedUsers": ["local users preferring shorter recruiter command"],
+      "impact": "This is a local extension, not a reference parity gap.",
+      "expectedBenefit": "Documents the extension so it is not mistaken for missing or conflicting reference behavior.",
+      "recommendedAction": "Keep as an intentional local improvement unless future compatibility policy forbids extra aliases.",
+      "suggestedNextPhase": "no implementation required",
+      "verificationSources": ["local-help", "local-source", "reference-readme"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "local-login-browser-options-extension",
+      "referencePath": null,
+      "localPath": "login --web/--browser/--cookie-path/--profile",
+      "workflowArea": "auth",
+      "subject": "option",
+      "status": "Intentionally Different",
+      "priority": "P3",
+      "gap": "Local CLI adds browser-page login and lower-level browser/profile selection options beyond the reference `--cookie-source` interface.",
+      "severity": "low",
+      "affectedUsers": ["local users needing explicit profile or cookie database selection"],
+      "impact": "The extra options are useful local extensions but should not hide the missing `--cookie-source` compatibility alias.",
+      "expectedBenefit": "Separates deliberate local improvements from reference compatibility gaps.",
+      "recommendedAction": "Keep the local options, add compatibility docs/tests, and separately fix or classify `--web` reliability.",
+      "suggestedNextPhase": "auth compatibility implementation feature",
+      "verificationSources": ["local-help", "local-source", "reference-source"],
+      "liveVerificationRequired": false,
+      "liveVerificationCondition": null
+    },
+    {
+      "id": "local-recruiter-message-extension",
+      "referencePath": null,
+      "localPath": "recruiter greet --message",
+      "workflowArea": "recruiter",
+      "subject": "option",
+      "status": "Intentionally Different",
+      "priority": "P3",
+      "gap": "Local recruiter greet adds `--message`; reference greet instead uses `--job` request context.",
+      "severity": "low",
+      "affectedUsers": ["local recruiters wanting custom greeting text"],
+      "impact": "The option may be useful, but it is not a substitute for the reference `--job` option.",
+      "expectedBenefit": "Clarifies local-only extension status for future product decisions.",
+      "recommendedAction": "Keep if supported by the live API, but add separate `--job` compatibility support.",
+      "suggestedNextPhase": "recruiter compatibility implementation feature",
+      "verificationSources": ["local-help", "local-source", "reference-source"],
+      "liveVerificationRequired": true,
+      "liveVerificationCondition": "Needs recruiter account to verify whether custom greeting messages are accepted by BOSS APIs."
+    }
+  ],
+  "remediation": {
+    "countsByStatus": {
+      "Full": 3,
+      "Partial": 14,
+      "Missing": 5,
+      "Blocked": 2,
+      "Intentionally Different": 3
+    },
+    "countsByPriority": {
+      "P0": 1,
+      "P1": 5,
+      "P2": 8,
+      "P3": 10
+    },
+    "topItems": [
+      "history-live-params-blocked",
+      "recruiter-geek-command-missing",
+      "structured-output-yaml-missing",
+      "login-default-fallback-behavior-different",
+      "login-web-local-extension-blocked"
+    ],
+    "recommendedBatches": [
+      {
+        "name": "P0 behavior blocker",
+        "priorityRange": "P0",
+        "findingIds": ["history-live-params-blocked"],
+        "rationale": "A registered job seeker workflow fails live with missing parameters and blocks credible behavior parity.",
+        "suggestedNextPhase": "behavior parity implementation feature"
+      },
+      {
+        "name": "Authentication parity and reliability",
+        "priorityRange": "P1-P2",
+        "findingIds": [
+          "login-default-fallback-behavior-different",
+          "login-web-local-extension-blocked",
+          "login-cookie-source-option-renamed",
+          "local-login-browser-options-extension"
+        ],
+        "rationale": "Login is prerequisite for most authenticated workflows and current local extensions need compatibility aliases and reliability proof.",
+        "suggestedNextPhase": "auth parity implementation feature"
+      },
+      {
+        "name": "Structured output compatibility",
+        "priorityRange": "P1",
+        "findingIds": ["structured-output-yaml-missing"],
+        "rationale": "Machine-readable output is a visible reference feature used by agents and scripts.",
+        "suggestedNextPhase": "structured output implementation feature"
+      },
+      {
+        "name": "Recruiter command and option parity",
+        "priorityRange": "P1-P3",
+        "findingIds": [
+          "recruiter-command-surface-partial",
+          "recruiter-geek-command-missing",
+          "recruiter-search-options-partial",
+          "recruiter-recommend-limit-option-missing",
+          "recruiter-greet-job-option-missing",
+          "recruiter-batch-view-options-partial",
+          "recruiter-inbox-options-partial",
+          "recruiter-reply-confirmation-missing",
+          "recruiter-chat-count-option-different",
+          "recruiter-invite-interview-options-partial",
+          "recruiter-resume-options-partial",
+          "recruiter-resume-download-security-option-missing",
+          "recruiter-export-job-filter-missing",
+          "local-recruiter-message-extension"
+        ],
+        "rationale": "Recruiter mode has broad command coverage but several reference flags and one legacy command are missing.",
+        "suggestedNextPhase": "recruiter parity implementation feature"
+      },
+      {
+        "name": "Job seeker polish",
+        "priorityRange": "P3",
+        "findingIds": ["job-search-option-coverage-partial"],
+        "rationale": "Core job seeker command surface is present; remaining differences are validation/default/alias polish.",
+        "suggestedNextPhase": "compatibility polish implementation feature"
+      }
+    ]
+  }
+}
